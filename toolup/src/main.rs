@@ -7,13 +7,8 @@ extern crate serde;
 extern crate clap;
 #[macro_use]
 extern crate toolup_macros;
-
-#[macro_export]
-macro_rules! s {
-    ($x:expr) => {
-        $x.to_string()
-    };
-}
+#[macro_use]
+extern crate kopy_common_lib;
 
 mod common;
 
@@ -24,6 +19,12 @@ fn main() {
     let matches = App::from_yaml(yml)
         .version(&*format!("v{}", crate_version!()))
         .get_matches();
+
+    kopy_common_lib::configure_logging(
+        matches.occurrences_of("debug") as i32,
+        matches.is_present("warn"),
+        matches.is_present("quite"),
+    );
 
     match matches.subcommand() {
         ("show-version", Some(cmd_match)) => unimplemented!(),

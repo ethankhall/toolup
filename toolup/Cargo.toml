@@ -11,3 +11,4 @@ serde = "1.0"
 log = "*"
 clap = { version = "2.32", features = ["yaml"] }
 toolup-macros = { path = "../toolup-macros"}
+kopy-common-lib = { git = "https://github.com/ethankhall/rust-shared.git", rev = "84a38d080b5a066c7443e6a46e043708d2a53f39" }

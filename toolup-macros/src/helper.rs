@@ -1,3 +1,5 @@
+// This comes from https://github.com/Peternator7/strum/blob/master/strum_macros/src/helpers.rs
+
 use syn::{Attribute, Ident, Meta, MetaList};
 
 pub fn extract_meta(attrs: &[Attribute]) -> Vec<Meta> {
