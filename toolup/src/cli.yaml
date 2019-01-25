@@ -1,0 +1,129 @@
+name: tookup
+about: A tool to keep tools up-to-date
+
+settings:
+    - SubCommandRequiredElseHelp
+args:
+    - debug: 
+        help: Turn debugging information on
+        short: d
+        long: debug
+        multiple: true
+        global: true
+
+    - quite: 
+        help: Only error output will be displayed
+        short: q
+        long: quite
+        global: true
+
+    - warn: 
+        help: Warning and Error level output will be displayed
+        short: w
+        long: warn
+        global: true
+    
+    - offline:
+        help: Run in offline mode, so no network requests will be made.
+        long: offline
+        global: true
+
+    - config:
+        help: Path to the config file to use from toolup
+        long: config
+        global: true
+        takes_value: true
+
+subcommands:
+    - show-version:
+        settings:
+            - ArgRequiredElseHelp
+        about: Shows the known versions for a given tool
+        group:
+            - opt:
+                required: true
+                args:
+                  - TOOL
+                  - all
+        args:
+            - NAME:
+                help: Name of the tool to look up
+                takes_value: true
+            - all:
+                help: Show versions for all tools
+                long: all
+                short: a
+
+    - lock-tool:
+        settings:
+            - ArgRequiredElseHelp
+        about: Toolup will no longer check for later versions for a given tool
+        group:
+            - opt:
+                required: true
+                args:
+                  - TOOL
+                  - all
+        args:
+            - TOOL:
+                help: Name of the tool to look up
+                takes_value: true
+                requires: 
+                    - VERSION
+            - VERSION:
+                help: Version of tool
+                takes_value: true
+            - all:
+                help: Apply to all tools. When specified TOOL and VERSION are no longer required.
+                long: all
+                short: a
+
+    - unlock-tool:
+        settings:
+            - ArgRequiredElseHelp
+        about: Toolup will not check for newer versions of TOOL, or ALL tools
+        group:
+          - opt:
+              required: true
+              args:
+                - TOOL
+                - all
+        args:
+            - TOOL:
+                help: Name of the tool to look up
+                takes_value: true
+            - all:
+                help: Apply to all tools
+                long: all
+                short: a
+
+    - status:
+        about: Reports everything Tookup knows, which versions have been downloaded, where, etc.
+
+    - update:
+        about: Updates all tools to latest version (unless they are locked)
+        args:
+          - daemonize:
+              help: Fork and run as a daemon
+              long: daemonize
+              short: z
+
+    - run:
+        settings: ArgRequiredElseHelp
+        about: Toolup will download tool if needed, then exec it.
+        args:
+            - TOOL:
+                help: Name of the tool to look up
+                takes_value: true
+            - ARGS:
+                help: Args to pass to TOOL
+                takes_value: true
+                multiple: true
+                last: true      
+
+groups:
+    - logging:
+        args:
+            - debug
+            - warn
+            - quite
