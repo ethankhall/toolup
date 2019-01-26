@@ -9,8 +9,10 @@ extern crate clap;
 extern crate toolup_macros;
 #[macro_use]
 extern crate kopy_common_lib;
+extern crate directories;
 
 mod common;
+mod commands;
 
 use clap::App;
 
@@ -26,13 +28,21 @@ fn main() {
         matches.is_present("quite"),
     );
 
-    match matches.subcommand() {
-        ("show-version", Some(cmd_match)) => unimplemented!(),
-        ("lock-tool", Some(cmd_match)) => unimplemented!(),
-        ("unlock-tool", Some(cmd_match)) => unimplemented!(),
-        ("status", Some(cmd_match)) => unimplemented!(),
-        ("update", Some(cmd_match)) => unimplemented!(),
-        ("run", Some(cmd_match)) => unimplemented!(),
+    let command = match matches.subcommand() {
+        ("show-version", Some(cmd_match)) => commands::run_show_version(cmd_match),
+        ("lock-tool", Some(cmd_match)) => commands::run_lock_tool(cmd_match),
+        ("unlock-tool", Some(cmd_match)) => commands::run_unlock_tool(cmd_match),
+        ("status", Some(cmd_match)) => commands::run_status(cmd_match),
+        ("update", Some(cmd_match)) => commands::run_update(cmd_match),
+        ("run", Some(cmd_match)) => commands::run_exec(cmd_match),
         _ => { panic!("This is a bug, please report the command wasn't found.")}
+    };
+
+    match command {
+        Ok(code) => std::process::exit(code),
+        Err(err) => {
+            eprintln!("Error while running toolup: {:?}", err);
+            std::process::exit(err.into())
+        }
     }
 }

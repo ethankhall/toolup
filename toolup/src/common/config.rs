@@ -9,6 +9,10 @@ use super::error::*;
 type Result<T> = std::result::Result<T, CliError>;
 
 pub fn parse_config(path: PathBuf) -> Result<GlobalConfig> {
+    if !path.exists() {
+        err!(ConfigError::ConfigFileNotFound(path))
+    }
+
     let contents: String = match fs::read_to_string(&path) {
         Ok(contents) => contents,
         Err(err) => err!(IOError::UnableToReadFile(path.clone(), err.to_string()))

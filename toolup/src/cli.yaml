@@ -43,7 +43,7 @@ subcommands:
             - opt:
                 required: true
                 args:
-                  - TOOL
+                  - NAME
                   - all
         args:
             - NAME:

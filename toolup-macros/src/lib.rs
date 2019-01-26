@@ -4,7 +4,6 @@ mod helper;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::*;
 
 use crate::helper::*;
 

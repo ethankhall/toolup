@@ -7,4 +7,3 @@ pub mod tests;
 
 pub mod config;
 pub mod model;
-pub mod commands;
