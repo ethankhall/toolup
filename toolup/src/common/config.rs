@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use std::fs;
 
+use clap::ArgMatches;
 use toml;
 
 use super::model::*;
@@ -8,7 +9,7 @@ use super::error::*;
 
 type Result<T> = std::result::Result<T, CliError>;
 
-pub fn parse_config(path: PathBuf) -> Result<GlobalConfig> {
+pub fn parse_config(path: PathBuf, args: &ArgMatches) -> Result<GlobalConfig> {
     if !path.exists() {
         err!(ConfigError::ConfigFileNotFound(path))
     }
@@ -20,10 +21,16 @@ pub fn parse_config(path: PathBuf) -> Result<GlobalConfig> {
 
     debug!("Read contents from {:?}", path);
 
-    match toml::from_str::<GlobalConfig>(&contents) {
-        Ok(config) => Ok(config),
+    let mut config = match toml::from_str::<GlobalConfig>(&contents) {
+        Ok(config) => config,
         Err(err) => err!(ConfigError::ConfigFormatError(err.to_string()))
+    };
+
+    if let Some(value) = args.value_of("github_api_token") {
+        config.tokens.github = Some(s!(value))
     }
+
+    Ok(config)
 }
 
 #[cfg(test)]
@@ -44,6 +51,6 @@ mod test {
         path.push(filename);
 
         println!("path: {:?}", path);
-        parse_config(path)      
+        parse_config(path, &ArgMatches::default())      
     }
 }

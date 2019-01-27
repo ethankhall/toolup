@@ -40,7 +40,8 @@ impl fmt::Display for ErrorCallSite {
 pub enum CliError {
     Unknown(ErrorCallSite, ()),
     IO(ErrorCallSite, IOError),
-    Config(ErrorCallSite, ConfigError)
+    Config(ErrorCallSite, ConfigError),
+    API(ErrorCallSite, ApiError)
 }
 
 macro_rules! write_with_line {
@@ -58,7 +59,8 @@ impl fmt::Display for CliError {
         match self {
             CliError::Unknown(site, _) => write!(f, "[{}] Unknown Error... Sorry!", site),
             CliError::IO(site, e) => write_with_line!(f, site, e),
-            CliError::Config(site, e) => write_with_line!(f, site, e)
+            CliError::Config(site, e) => write_with_line!(f, site, e),
+            CliError::API(site, e) => write_with_line!(f, site, e)
         }
     }
 }
@@ -68,7 +70,8 @@ impl std::convert::Into<i32> for CliError {
         match self {
             CliError::Unknown(_, _) => 9,
             CliError::IO(_, _) => 10,
-            CliError::Config(_, _) => 11
+            CliError::Config(_, _) => 11,
+            CliError::API(_, _) => 12
         }
     }
 }
@@ -76,6 +79,7 @@ impl std::convert::Into<i32> for CliError {
 
 from!(CliError::IO, IOError);
 from!(CliError::Config, ConfigError);
+from!(CliError::API, ApiError);
 from!(CliError::Unknown, ());
 
 trait ErrorCode {
@@ -92,7 +96,16 @@ pub enum IOError {
 #[toolup(error_prefix = "CFG")]
 pub enum ConfigError {
     ConfigFormatError(String),
-    ConfigFileNotFound(PathBuf)
+    ConfigFileNotFound(PathBuf),
+    ToolNotFound(String),
+}
+
+#[derive(Debug, ErrorCode)]
+#[toolup(error_prefix = "API")]
+pub enum ApiError {
+    UnableToContactGitHub(String),
+    CallWasNotSuccessful(String),
+    GitHubTokenNotProvided,
 }
 
 #[cfg(test)]

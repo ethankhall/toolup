@@ -10,8 +10,11 @@ extern crate toolup_macros;
 #[macro_use]
 extern crate kopy_common_lib;
 extern crate directories;
+extern crate json;
 
+mod api_models;
 mod common;
+mod version;
 mod commands;
 
 use clap::App;
@@ -41,7 +44,7 @@ fn main() {
     match command {
         Ok(code) => std::process::exit(code),
         Err(err) => {
-            eprintln!("Error while running toolup: {:?}", err);
+            eprintln!("Error while running toolup: {}", err);
             std::process::exit(err.into())
         }
     }

@@ -3,8 +3,24 @@ use std::collections::BTreeMap;
 #[serde(rename_all = "kebab-case")]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GlobalConfig {
+    #[serde(default)]
+    #[serde(alias = "token")]
+    pub tokens: Tokens,
+
     #[serde(alias = "tool")]
     pub tools: BTreeMap<String, ApplicationConfig>
+}
+
+#[serde(rename_all = "kebab-case")]
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Tokens {
+    pub github: Option<String>
+}
+
+impl Default for Tokens {
+    fn default() -> Self {
+        Tokens { github: None}
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -31,6 +47,16 @@ pub enum ArtifactSource {
     TGZ { name: String, path: String },
     #[serde(alias = "raw")]
     Raw { name: String },
+}
+
+impl ArtifactSource {
+    pub fn get_name(&self) -> String {
+        match self {
+            ArtifactSource::Zip { name, path: _ } => name,
+            ArtifactSource::TGZ { name, path: _ } => name,
+            ArtifactSource::Raw { name } => name
+        }.to_string()
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]

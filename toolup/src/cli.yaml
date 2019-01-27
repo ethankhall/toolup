@@ -33,6 +33,19 @@ args:
         long: config
         global: true
         takes_value: true
+    
+    - github_api_token:
+        help: Token to use to talk to GitHub's API's
+        long: github-api-token
+        global: true
+        takes_value: true
+        env: GITHUB_TOKEN
+
+    - github_api_server:
+        help: Base API URL for GitHub
+        global: true
+        takes_value: true
+        env: GITHUB_API_SERVER
 
 subcommands:
     - show-version:
@@ -53,6 +66,10 @@ subcommands:
                 help: Show versions for all tools
                 long: all
                 short: a
+            - include_missing:
+                help: Include versions where no version is avaliable
+                long: include-missing
+                short: m
 
     - lock-tool:
         settings:
