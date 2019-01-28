@@ -11,10 +11,10 @@ extern crate toolup_macros;
 extern crate kopy_common_lib;
 extern crate directories;
 extern crate json;
+extern crate indicatif;
 
-mod api_models;
+mod storage;
 mod common;
-mod version;
 mod commands;
 
 use clap::App;

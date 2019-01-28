@@ -8,7 +8,8 @@ use crate::common::config::*;
 use crate::common::model::*;
 use crate::err;
 
-use crate::version::*;
+use crate::storage::get_global_state;
+use crate::storage::model::*;
 
 pub type CliResult = Result<i32, CliError>;
 
@@ -30,34 +31,34 @@ pub fn run_show_version(args: &ArgMatches) -> CliResult {
     let config = get_config(args)?;
     
     let tool_names: Vec<String> = if args.is_present("all") {
-        config.tools.keys().map(|x| s!(x)).collect()
+        config.tools().keys().map(|x| s!(x)).collect()
     } else {
         vec!(s!(args.value_of("NAME").unwrap()))
     };
 
     let include_missing = args.is_present("include_missing");
+    let global_state = get_global_state(&config)?;
 
     for tool_name in tool_names {
-        let tool: &ApplicationConfig = match config.tools.get(&tool_name) {
+        let tool: &ToolGlobalState = match global_state.tools.get(&tool_name) {
             Some(tool) => tool,
             None => err!(ConfigError::ToolNotFound(tool_name))
         };
 
-        let version_api = get_version_api(&tool.version_source, &config.tokens, tool.artifact.get_name())?;
-
-        let latest_versions = version_api.get_versions(15)?;
         println!("Tool: {}", tool_name);
-        
-        let lines: Vec<String> = latest_versions
-            .iter()
-            .filter(|x| include_missing || x.artifact_path.is_some())
-            .map(|version| {
-                match version.artifact_path {
-                    Some(_) => s!(version.name),
-                    None => s!(format!("{} - Artifact missing", version.name))
-                }
-            })
-            .collect();
+
+        let versions = tool.get_versions();
+
+        let mut lines: Vec<String> = Vec::new();
+
+        for version in versions { 
+            let v = tool.get_version(&version).unwrap();
+            match (include_missing, v) {
+                (true, ToolVersion::NoArtifact { name }) => lines.push(s!(format!("{} - Artifact missing", name))),
+                (_, ToolVersion::Artifact { name, download_url: _, installed: _ }) => lines.push(s!(format!("{}", name))),
+                _ => {}
+            }
+        }
 
         for (i, line) in lines.iter().enumerate() {
             if i + 1 == lines.len() {

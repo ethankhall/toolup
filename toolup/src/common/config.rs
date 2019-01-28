@@ -41,7 +41,7 @@ mod test {
     #[test]
     fn test_configs() {
         let config: GlobalConfig = assert_ok!(verify_config_parses(s!("example-1.toml")));
-        let crom: &ApplicationConfig = config.tools.get("crom").unwrap();
+        let crom: &ApplicationConfig = config.tools().get("crom").unwrap();
         assert_eq!(UpdateFrequency::Fast, crom.update_frequency);
     }
 

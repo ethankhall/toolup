@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::path::PathBuf;
 
 #[serde(rename_all = "kebab-case")]
 #[derive(Serialize, Deserialize, Debug)]
@@ -8,7 +9,13 @@ pub struct GlobalConfig {
     pub tokens: Tokens,
 
     #[serde(alias = "tool")]
-    pub tools: BTreeMap<String, ApplicationConfig>
+    tools: BTreeMap<String, ApplicationConfig>
+}
+
+impl GlobalConfig {
+    pub fn tools<'a> (&'a self) -> &'a BTreeMap<String, ApplicationConfig> {
+        return &self.tools
+    }
 }
 
 #[serde(rename_all = "kebab-case")]
@@ -31,11 +38,25 @@ pub struct ApplicationConfig {
     pub artifact: ArtifactSource
 }
 
+impl ApplicationConfig {
+    pub fn version_source<'a>(&'a self) -> &'a VersionSource {
+        &self.version_source
+    }
+
+    pub fn update_frequency<'a>(&'a self) -> &'a UpdateFrequency {
+        &self.update_frequency
+    }
+
+    pub fn artifact<'a>(&'a self) -> &'a ArtifactSource {
+        &self.artifact
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum VersionSource {
     #[serde(alias = "github")]
-    GitHub { owner: String, repo: String}
+    GitHub { owner: String, repo: String }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -56,6 +77,14 @@ impl ArtifactSource {
             ArtifactSource::TGZ { name, path: _ } => name,
             ArtifactSource::Raw { name } => name
         }.to_string()
+    }
+
+    pub fn path_to_art(&self) -> PathBuf {
+        match self {
+            ArtifactSource::Zip { name: _, path: path } => PathBuf::from(path),
+            ArtifactSource::TGZ { name: _, path: path } => PathBuf::from(path),
+            ArtifactSource::Raw { name } => PathBuf::from(name)
+        }
     }
 }
 
