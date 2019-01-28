@@ -12,6 +12,7 @@ extern crate kopy_common_lib;
 extern crate directories;
 extern crate json;
 extern crate indicatif;
+extern crate chrono;
 
 mod storage;
 mod common;

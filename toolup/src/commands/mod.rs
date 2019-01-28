@@ -47,15 +47,16 @@ pub fn run_show_version(args: &ArgMatches) -> CliResult {
 
         println!("Tool: {}", tool_name);
 
-        let versions = tool.get_versions();
+        let mut versions: Vec<ToolVersion> = Vec::new();
+        versions.extend(tool.get_all_versions().into_iter());
 
         let mut lines: Vec<String> = Vec::new();
+        versions.sort_by(|a, b| b.created_at().cmp(&a.created_at()));
 
-        for version in versions { 
-            let v = tool.get_version(&version).unwrap();
-            match (include_missing, v) {
-                (true, ToolVersion::NoArtifact { name }) => lines.push(s!(format!("{} - Artifact missing", name))),
-                (_, ToolVersion::Artifact { name, download_url: _, installed: _ }) => lines.push(s!(format!("{}", name))),
+        for version in versions {
+            match (include_missing, version) {
+                (true, ToolVersion::NoArtifact { name, created: _ }) => lines.push(s!(format!("{} - Artifact missing", name))),
+                (_, ToolVersion::Artifact { name, download_url: _, created: _, installed: _ }) => lines.push(s!(format!("{}", name))),
                 _ => {}
             }
         }
