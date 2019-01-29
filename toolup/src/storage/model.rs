@@ -157,24 +157,10 @@ impl ToolVersion {
         }
     }
 
-    pub fn get_name(&self) -> String {
-        match self {
-            ToolVersion::NoArtifact(no_art) => no_art.name.clone(),
-            ToolVersion::Artifact(art) => art.name.clone()
-        }.to_string()
-    }
-
     pub fn created_at(&self) -> i64 {
         match self {
             ToolVersion::NoArtifact(no_art) => no_art.created,
             ToolVersion::Artifact(art) => art.created
-        }
-    }
-
-    pub fn is_downloadable(&self) -> bool {
-        match self {
-            ToolVersion::NoArtifact(_) => false,
-            ToolVersion::Artifact(_) => true
         }
     }
 }

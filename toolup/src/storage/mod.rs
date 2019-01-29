@@ -15,8 +15,32 @@ use crate::common::model::*;
 use self::model::*;
 use crate::err;
 
-pub fn download_tool(state: GlobalState, tool_name: String) -> Result<bool, CliError> {
-    let tool = match state.get_tool(&tool_name) {
+pub fn download_tools(state: &GlobalState, tool_names: Vec<String>) -> Result<(), CliError> {
+    let pb = ProgressBar::new(tool_names.len() as u64);
+    let spinner_style = ProgressStyle::default_spinner()
+        .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
+        .template("{prefix:.bold.dim} {spinner} [{pos}/{len}] Downloading {wide_msg}");
+    pb.set_style(spinner_style.clone());
+    pb.enable_steady_tick(100);
+
+    for tool_name in tool_names {
+        pb.inc(1);
+        pb.set_message(&tool_name);
+
+        match download_tool(&state, &tool_name) {
+            Ok(true) => {},
+            Ok(false) => {
+                warn!("Unable to download {}", tool_name);
+            },
+            Err(e) => return Err(e)
+        }
+    }
+
+    Ok(())
+}
+
+pub fn download_tool(state: &GlobalState, tool_name: &str) -> Result<bool, CliError> {
+    let tool = match state.get_tool(tool_name) {
         Some(tool) => tool,
         None => return Ok(false)
     };
@@ -27,9 +51,9 @@ pub fn download_tool(state: GlobalState, tool_name: String) -> Result<bool, CliE
     };
 
     let client = reqwest::Client::new();
-    let mut req = client.get(&version.download_url);
+    let req = client.get(&version.download_url);
 
-    let mut req = match &tool.auth {
+    let req = match &tool.auth {
         AuthConfig::None => req,
         AuthConfig::Authorization(value) => req.header(reqwest::header::AUTHORIZATION, value.clone())
     };
@@ -63,11 +87,13 @@ pub fn download_tool(state: GlobalState, tool_name: String) -> Result<bool, CliE
     download_dir.pop();
     download_dir.push(version.name);
 
+    debug!("Downloading {} into {:#?}", tool_name, download_dir);
+
     fs::create_dir_all(&download_dir)?;
 
     match version.container {
         ArtifactType::Raw => {
-            if let Err(e) = fs::rename(temp_file, download_dir) {
+            if let Err(e) = fs::rename(temp_file, version.installed.exec_path) {
                 err!(IOError::UnableToMoveArtifact(e.to_string()))
             }
         },
@@ -83,13 +109,39 @@ pub fn download_tool(state: GlobalState, tool_name: String) -> Result<bool, CliE
             if let Err(e) = d.read_to_end(&mut gz) {
                 err!(IOError::UnableToExtractFile(e.to_string()))
             }
-            
+
             let mut a = Archive::new(gz.as_slice());
-            if let Err(e) =  a.unpack(download_dir) {
+            if let Err(e) = a.unpack(download_dir) {
                 err!(IOError::UnableToExtractFile(e.to_string()))
             }
+
+            let _ = fs::remove_file(&temp_file);
         },
-        ArtifactType::Zip => {}
+        ArtifactType::Zip => {
+            let file = match fs::File::open(&temp_file) {
+                Ok(file) => file,
+                Err(e) => err!(IOError::UnableToReadFile(temp_file, e.to_string()))
+            };
+
+            let mut archive = zip::ZipArchive::new(file).unwrap();
+
+            for i in 0..archive.len() {
+                let mut path = download_dir.clone();
+                let mut file = archive.by_index(i).unwrap();
+                path.push(file.sanitized_name());
+
+                let mut contents: Vec<u8> = Vec::new();
+                if let Err(e) = file.read_to_end(&mut contents) {
+                    err!(IOError::UnableToExtractFile(e.to_string()))
+                }
+
+                if let Err(e) = fs::write(path, contents.as_slice()) {
+                    err!(IOError::UnableToExtractFile(e.to_string()))
+                }
+            }
+
+            let _ = fs::remove_file(&temp_file);
+        }
     }
 
     Ok(false)
@@ -107,6 +159,7 @@ pub fn get_global_state(config: &GlobalConfig) -> Result<GlobalState, CliError> 
         .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
         .template("{prefix:.bold.dim} {spinner} [{pos}/{len}] Updating {wide_msg}");
     pb.set_style(spinner_style.clone());
+    pb.enable_steady_tick(100);
 
     for (name, tool) in global_config_tools.into_iter() {
         pb.inc(1);

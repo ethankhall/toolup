@@ -8,7 +8,7 @@ use crate::common::config::*;
 use crate::common::model::*;
 use crate::err;
 
-use crate::storage::get_global_state;
+use crate::storage::{download_tools, get_global_state};
 use crate::storage::model::*;
 
 pub type CliResult = Result<i32, CliError>;
@@ -83,7 +83,12 @@ pub fn run_update(args: &ArgMatches) -> CliResult {
     let config = get_config(args)?;
     let global_state = get_global_state(&config)?;
 
-    unimplemented!();
+    let tool_names: Vec<String> = config.tools().keys().map(|x| s!(x)).collect();
+    
+    match download_tools(&global_state, tool_names) {
+        Ok(_) => Ok(0),
+        Err(e) => Err(e)
+    }
 }
 
 pub fn run_exec(_args: &ArgMatches) -> CliResult { err!(()) }

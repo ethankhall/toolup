@@ -15,6 +15,7 @@ extern crate indicatif;
 extern crate chrono;
 extern crate http;
 extern crate tar;
+extern crate zip;
 
 mod storage;
 mod common;
