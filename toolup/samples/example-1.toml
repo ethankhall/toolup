@@ -2,3 +2,8 @@
 version-source = { type = "github", owner = "ethankhall", repo = "crom" }
 update-frequency = "fast" 
 artifact = { name = "crom-windows.zip", type = "zip", path = "crom.exe" }
+
+[tool.toolkit]
+version-source = { type = "github", owner = "ethankhall", repo = "toolkit" }
+update-frequency = "fast" 
+artifact = { name = "toolkit-windows.exe", type = "raw" }

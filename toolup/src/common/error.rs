@@ -89,7 +89,10 @@ trait ErrorCode {
 #[derive(Debug, ErrorCode)]
 #[toolup(error_prefix = "IO")]
 pub enum IOError {
-    UnableToReadFile(PathBuf, String)
+    UnableToReadFile(PathBuf, String),
+    GernalIOError(String),
+    UnableToMoveArtifact(String),
+    UnableToExtractFile(String)
 }
 
 #[derive(Debug, ErrorCode)]
@@ -106,6 +109,13 @@ pub enum ApiError {
     UnableToContactGitHub(String),
     CallWasNotSuccessful(String),
     GitHubTokenNotProvided,
+    UnableToDownloadArtifact(String)
+}
+
+impl From<std::io::Error> for CliError {
+    fn from(e: std::io::Error) -> Self {
+        CliError::IO(ErrorCallSite::new(0, "unknown"), IOError::GernalIOError(e.to_string()))
+    }
 }
 
 #[cfg(test)]

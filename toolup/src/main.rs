@@ -13,6 +13,8 @@ extern crate directories;
 extern crate json;
 extern crate indicatif;
 extern crate chrono;
+extern crate http;
+extern crate tar;
 
 mod storage;
 mod common;

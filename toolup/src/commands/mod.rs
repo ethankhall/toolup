@@ -55,8 +55,8 @@ pub fn run_show_version(args: &ArgMatches) -> CliResult {
 
         for version in versions {
             match (include_missing, version) {
-                (true, ToolVersion::NoArtifact { name, created: _ }) => lines.push(s!(format!("{} - Artifact missing", name))),
-                (_, ToolVersion::Artifact { name, download_url: _, created: _, installed: _ }) => lines.push(s!(format!("{}", name))),
+                (true, ToolVersion::NoArtifact(no_art)) => lines.push(s!(format!("{} - Artifact missing", no_art.name))),
+                (_, ToolVersion::Artifact(art)) => lines.push(s!(format!("{}", art.name))),
                 _ => {}
             }
         }
@@ -70,7 +70,7 @@ pub fn run_show_version(args: &ArgMatches) -> CliResult {
         }
     }
 
-    err!(()) 
+    Ok(0)
 }
 
 pub fn run_lock_tool(_args: &ArgMatches) -> CliResult { err!(()) }
@@ -79,6 +79,11 @@ pub fn run_unlock_tool(_args: &ArgMatches) -> CliResult { err!(()) }
 
 pub fn run_status(_args: &ArgMatches) -> CliResult { err!(()) }
 
-pub fn run_update(_args: &ArgMatches) -> CliResult { err!(()) }
+pub fn run_update(args: &ArgMatches) -> CliResult { 
+    let config = get_config(args)?;
+    let global_state = get_global_state(&config)?;
+
+    unimplemented!();
+}
 
 pub fn run_exec(_args: &ArgMatches) -> CliResult { err!(()) }
