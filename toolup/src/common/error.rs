@@ -101,6 +101,7 @@ pub enum ConfigError {
     ConfigFormatError(String),
     ConfigFileNotFound(PathBuf),
     ToolNotFound(String),
+    UnableToWriteConfig(String)
 }
 
 #[derive(Debug, ErrorCode)]

@@ -1,10 +1,10 @@
 use json::JsonValue;
-use chrono::DateTime;
+use chrono::{DateTime, Utc};
 
-use crate::common::model::Tokens;
+use crate::common::model::{ArtifactSource, Tokens};
 use crate::common::error::*;
 use crate::err;
-use super::model::*;
+use super::lock::*;
 
 const GET_RELEASES: &'static str = "
 query ($owner: String!, $repo: String!, $release_count:Int, $artifact_name: String) {
@@ -39,18 +39,15 @@ struct GraphQlQuery {
     variables: GraphQlVariables
 }
 
-pub fn get_current_details(owner: String, repo: String, tokens: &Tokens, artifact_name: String) -> Result<Vec<VersionUrlResponse>, CliError> {
+pub fn get_current_details(owner: String, repo: String, api_token: String, tool_name: &str, artifact: &ArtifactSource) -> Result<Vec<ToolVersion>, CliError> {
     let graph_api_query = make_graph_ql_body(
             GraphQlRequest::GetReleases {
                 owner: owner, 
                 repo: repo, 
-                artifact_name: artifact_name, 
+                artifact_name: artifact.get_name(), 
                 limit: 15
             });
     debug!("Body to send to GitHub: {}", graph_api_query);
-
-
-    let api_token = get_github_token(&tokens)?;
 
     let client = reqwest::Client::new();
     let url: &str = &format!("{}/graphql", get_github_api());
@@ -77,11 +74,17 @@ pub fn get_current_details(owner: String, repo: String, tokens: &Tokens, artifac
     
     debug!("Response from GitHub: {}", body);
 
-    parse_get_release_response(body)
+    parse_get_release_response(body, tool_name, artifact)
 }
 
-fn parse_get_release_response(body: JsonValue) -> Result<Vec<VersionUrlResponse>, CliError> {
-     if let JsonValue::Object(object) = body { 
+fn parse_get_release_response(body: JsonValue, tool_name: &str, artifact: &ArtifactSource) -> Result<Vec<ToolVersion>, CliError> {
+    let (art_type, exec_path) = match artifact {
+        ArtifactSource::Zip { name, path } => (ArtifactType::Zip, path),
+        ArtifactSource::TGZ { name, path } => (ArtifactType::Tgz, path),
+        ArtifactSource::Raw { name } => (ArtifactType::Raw, name)
+    };
+
+    if let JsonValue::Object(object) = body { 
         match &object["data"] {
             JsonValue::Object(data) => {
                 if let JsonValue::Object(repo) = &data["repository"] {
@@ -102,9 +105,17 @@ fn parse_get_release_response(body: JsonValue) -> Result<Vec<VersionUrlResponse>
                                     _ => return None
                                 };
 
-                                let created_at = DateTime::parse_from_rfc3339(&created_at).unwrap().timestamp_millis();
+                                let created_at = DateTime::parse_from_rfc3339(&created_at).unwrap();
 
-                                Some(VersionUrlResponse::new(name, created_at, path))
+                                Some(ToolVersion {
+                                    name: s!(tool_name),
+                                    version: name,
+                                    created_at: created_at.with_timezone(&Utc),
+                                    download_url: path.unwrap_or_else(|| s!("No URL")),
+                                    exec_path: s!(exec_path),
+                                    art_type,
+                                    auth_token_source: AuthTokenSource::GitHub
+                                })
                             }).filter(|x| x.is_some())
                             .map(|x| x.unwrap())
                             .collect());

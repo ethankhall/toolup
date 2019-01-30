@@ -16,12 +16,30 @@ extern crate chrono;
 extern crate http;
 extern crate tar;
 extern crate zip;
+#[macro_use]
+extern crate lazy_static;
 
 mod storage;
 mod common;
 mod commands;
 
+use directories::ProjectDirs;
+
 use clap::App;
+
+
+lazy_static! {
+    pub static ref CONFIG_DIR: String = {
+        let project_dirs = ProjectDirs::from("io", "ehdev", "toolup").expect("To create project dirs");
+        s!(project_dirs.cache_dir().to_str().unwrap())
+    };
+
+    pub static ref CACHE_DIR: String = {
+        let project_dirs = ProjectDirs::from("io", "ehdev", "toolup").expect("To create project dirs");
+        s!(project_dirs.cache_dir().to_str().unwrap())
+    };
+}
+
 
 fn main() {
     let yml = load_yaml!("cli.yaml");

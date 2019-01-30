@@ -1,21 +1,22 @@
-pub mod model;
 pub mod github;
+pub mod lock;
 
-use std::path::{Path};
+use std::path::{Path, PathBuf};
 use std::io::Read;
 use std::fs;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use flate2::read::GzDecoder;
 use directories::ProjectDirs;
 use indicatif::{ProgressBar, ProgressStyle};
 use tar::Archive;
 
+use self::lock::*;
 use crate::common::error::*;
 use crate::common::model::*;
-use self::model::*;
 use crate::err;
 
-pub fn download_tools(state: &GlobalState, tool_names: Vec<String>) -> Result<(), CliError> {
+pub fn download_tools(state: &ToolLock, tokens: &Tokens, tool_names: Vec<String>) -> Result<(), CliError> {
     let pb = ProgressBar::new(tool_names.len() as u64);
     let spinner_style = ProgressStyle::default_spinner()
         .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
@@ -27,50 +28,45 @@ pub fn download_tools(state: &GlobalState, tool_names: Vec<String>) -> Result<()
         pb.inc(1);
         pb.set_message(&tool_name);
 
-        match download_tool(&state, &tool_name) {
-            Ok(true) => {},
-            Ok(false) => {
-                warn!("Unable to download {}", tool_name);
-            },
-            Err(e) => return Err(e)
+        let versions = state.find_tool(&tool_name);
+        versions.sort_by(|a, b| a.created_at.partial_cmp(&b.created_at).unwrap());
+
+        if let Some(version) = versions.first() {
+            match download_tool(version, &tokens) {
+                Ok(true) => {},
+                Ok(false) => {
+                    warn!("Unable to download {}", tool_name);
+                },
+                Err(e) => return Err(e)
+            }
         }
     }
 
-    Ok(())
+    return write_lock(&state);
 }
 
-pub fn download_tool(state: &GlobalState, tool_name: &str) -> Result<bool, CliError> {
-    let tool = match state.get_tool(tool_name) {
-        Some(tool) => tool,
-        None => return Ok(false)
-    };
-
-    let version = match tool.get_version_to_download() {
-        Some(version) => version,
-        None => return Ok(false)
-    };
-
+pub fn download_tool(tool: &ToolVersion, tokens: &Tokens) -> Result<bool, CliError> {
     let client = reqwest::Client::new();
-    let req = client.get(&version.download_url);
+    let req = client.get(&tool.download_url);
 
-    let req = match &tool.auth {
-        AuthConfig::None => req,
-        AuthConfig::Authorization(value) => req.header(reqwest::header::AUTHORIZATION, value.clone())
+    let req = match &tool.auth_token_source {
+        AuthTokenSource::None => req,
+        AuthTokenSource::GitHub => {
+            let token = github::get_github_token(&tokens)?;
+            req.header(reqwest::header::AUTHORIZATION, token)
+        }
     };
 
-    let project_dirs = ProjectDirs::from("io", "ehdev", "toolup").expect("To create project dirs");
-    let mut download_dir = project_dirs.cache_dir().to_path_buf();
-    download_dir.push("download");
-    download_dir.push(tool_name);
+    let download_dir = tool.get_download_dir();
     fs::create_dir_all(&download_dir)?;
 
-    download_dir.push(format!("{}.part", version.name));
+    let part_path = download_dir.join(format!("../{}.part", tool.version));
 
     match req.send() {
         Err(e) => err!(ApiError::UnableToDownloadArtifact(e.to_string())),
         Ok(mut response) => { 
             if response.status().is_success() {
-                let mut file = fs::File::create(download_dir.clone())?;
+                let mut file = fs::File::create(part_path.clone())?;
                 if let Err(e) = response.copy_to(&mut file) {
                     err!(ApiError::CallWasNotSuccessful(e.to_string()))
                 }
@@ -85,19 +81,19 @@ pub fn download_tool(state: &GlobalState, tool_name: &str) -> Result<bool, CliEr
 
     let temp_file = download_dir.to_path_buf();
     download_dir.pop();
-    download_dir.push(version.name);
+    download_dir.push(tool.version);
 
-    debug!("Downloading {} into {:#?}", tool_name, download_dir);
+    debug!("Downloading {} into {:#?}", tool.name, download_dir);
 
     fs::create_dir_all(&download_dir)?;
 
-    match version.container {
+    match tool.art_type {
         ArtifactType::Raw => {
-            if let Err(e) = fs::rename(temp_file, version.installed.exec_path) {
+            if let Err(e) = fs::rename(temp_file, tool.exec_path.clone()) {
                 err!(IOError::UnableToMoveArtifact(e.to_string()))
             }
         },
-        ArtifactType::TGZ => {
+        ArtifactType::Tgz => {
             let file = match fs::File::open(&temp_file) {
                 Ok(file) => file,
                 Err(e) => err!(IOError::UnableToReadFile(temp_file, e.to_string()))
@@ -147,10 +143,10 @@ pub fn download_tool(state: &GlobalState, tool_name: &str) -> Result<bool, CliEr
     Ok(false)
 }
 
-pub fn get_global_state(config: &GlobalConfig) -> Result<GlobalState, CliError> {
-    let mut lock = match read_existing_lock() {
+pub fn update_global_state(config: &GlobalConfig) -> Result<ToolLock, CliError> {
+    let mut lock = match lock::read_existing_lock() {
         Some(lock) => lock,
-        None => GlobalState::default()
+        None => ToolLock::default()
     };
 
     let global_config_tools = config.tools();
@@ -166,72 +162,19 @@ pub fn get_global_state(config: &GlobalConfig) -> Result<GlobalState, CliError> 
         pb.set_message(&name);
 
         let versions = match tool.version_source() {
-            VersionSource::GitHub { owner, repo } => 
-                github::get_current_details(s!(owner), s!(repo), &config.tokens, tool.artifact.get_name())
+            VersionSource::GitHub { owner, repo } => {
+                let token = github::get_github_token(&config.tokens)?;
+                github::get_current_details(s!(owner), s!(repo), token, &name, &tool.artifact)?
+            }
         };
 
-        if let Ok(versions) = versions {
-            merge_in(&mut lock, name, tool, versions);
-        } else {
-            warn!("Unable to update {}", name);
-        }
+        lock.add_all(versions);
     }
 
     pb.finish_and_clear();
-
-    Ok(lock)
-}
-
-fn merge_in(global: &mut GlobalState, name: &String, app: &ApplicationConfig, versions: Vec<VersionUrlResponse>) {
-    if !global.tools.contains_key(name) {
-        global.tools.insert(name.to_string(), ToolGlobalState::new(name.to_string()));
+    
+    match write_lock(&lock) {
+        Ok(_) => Ok(lock),
+        Err(e) => Err(e)
     }
-
-    let tool: &ToolGlobalState = global.get_tool(&name)
-        .expect("Tool to exist, as we've created it if it's missing");
-
-    for version in versions {
-        if !tool.has_version(&version.name()) {
-            let project_dirs = ProjectDirs::from("io", "ehdev", "toolup").expect("To create project dirs");
-            let mut download_dir = project_dirs.cache_dir().to_path_buf();
-            download_dir.push("download");
-            download_dir.push(name);
-            download_dir.push(version.name());
-            download_dir.push(app.artifact.path_to_art());
-
-            let art_type = match app.artifact {
-                ArtifactSource::Zip { name: _, path: _ } => ArtifactType::Zip,
-                ArtifactSource::TGZ { name: _, path: _ } => ArtifactType::TGZ,
-                ArtifactSource::Raw { name: _ }=> ArtifactType::Raw
-            };
-
-            let tool_install = TookInstallDetails { exec_path: s!(download_dir.to_str().unwrap()), downloaded_at: None };
-            tool.insert_version(version.name(), ToolVersion::new(version, art_type, tool_install));
-        }
-    }
-}
-
-fn read_existing_lock() -> Option<GlobalState> {
-    let project_dirs = ProjectDirs::from("io", "ehdev", "toolup").expect("To create project dirs");
-    let config_dir = project_dirs.config_dir();
-    let global_path = config_dir.join(Path::new("toolup.lock"));
-
-    if global_path.exists() {
-        let contents: String = match fs::read_to_string(&global_path) {
-            Ok(contents) => contents,
-            Err(err) => return None
-        };
-
-        debug!("Contents for global config {:?}", contents);
-
-        return match toml::from_str::<GlobalState>(&contents) {
-            Ok(config) => Some(config),
-            Err(err) => {
-                warn!("Unable to deserialize existing state file, dropping it.");
-                None
-            }
-        };
-    }
-
-    None
 }
