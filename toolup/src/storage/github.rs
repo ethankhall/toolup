@@ -79,8 +79,8 @@ pub fn get_current_details(owner: String, repo: String, api_token: String, tool_
 
 fn parse_get_release_response(body: JsonValue, tool_name: &str, artifact: &ArtifactSource) -> Result<Vec<ToolVersion>, CliError> {
     let (art_type, exec_path) = match artifact {
-        ArtifactSource::Zip { name, path } => (ArtifactType::Zip, path),
-        ArtifactSource::TGZ { name, path } => (ArtifactType::Tgz, path),
+        ArtifactSource::Zip { name: _, path } => (ArtifactType::Zip, path),
+        ArtifactSource::TGZ { name: _, path } => (ArtifactType::Tgz, path),
         ArtifactSource::Raw { name } => (ArtifactType::Raw, name)
     };
 
@@ -111,9 +111,9 @@ fn parse_get_release_response(body: JsonValue, tool_name: &str, artifact: &Artif
                                     name: s!(tool_name),
                                     version: name,
                                     created_at: created_at.with_timezone(&Utc),
-                                    download_url: path.unwrap_or_else(|| s!("No URL")),
+                                    download_url: path.unwrap_or_else(|| s!(super::lock::NO_DOWNLOAD_URL)),
                                     exec_path: s!(exec_path),
-                                    art_type,
+                                    art_type: art_type.clone(),
                                     auth_token_source: AuthTokenSource::GitHub
                                 })
                             }).filter(|x| x.is_some())

@@ -1,63 +1,64 @@
-use std::path::{Path, PathBuf};
+use std::collections::{BinaryHeap, BTreeMap};
 
 use clap::ArgMatches;
-use directories::ProjectDirs;
 
 use crate::common::error::*;
 use crate::common::config::*;
-use crate::common::model::*;
 use crate::err;
 
-use crate::storage::{download_tools, get_global_state};
-use crate::storage::model::*;
+use crate::ConfigFiles;
+use crate::storage::{download_tools, update_global_state};
+use crate::storage::lock::*;
 
 pub type CliResult = Result<i32, CliError>;
 
-fn get_config(args: &ArgMatches) -> Result<GlobalConfig, CliError> {
-    let config_file = match args.value_of("config") {
-        Some(config_file) => PathBuf::from(config_file),
+fn get_global_config(config_file: &ConfigFiles, args: &ArgMatches) -> Result<ToolLock, CliError> {
+    match read_existing_lock(config_file.lock_path.clone()) {
+        Some(config) => Ok(config),
         None => {
-            let project_dirs = ProjectDirs::from("io", "ehdev", "toolup").expect("To create project dirs");
-            let toolup_config_dir = project_dirs.config_dir();
-
-            toolup_config_dir.join(Path::new("toolup.toml")).to_path_buf()
+            let glocal_config = parse_config(config_file.config_path.clone(), args)?;
+            update_global_state(ToolLock::default(), &glocal_config)
         }
-    };
-    
-    parse_config(config_file, &args)
+    }
 }
 
-pub fn run_show_version(args: &ArgMatches) -> CliResult { 
-    let config = get_config(args)?;
+pub fn run_show_version(config_file: &ConfigFiles, args: &ArgMatches) -> CliResult { 
+    let lock = get_global_config(config_file, args)?;
     
-    let tool_names: Vec<String> = if args.is_present("all") {
-        config.tools().keys().map(|x| s!(x)).collect()
+    let tool_list: Vec<ToolVersion> = if args.is_present("all") {
+        lock.get_all_tools()
     } else {
-        vec!(s!(args.value_of("NAME").unwrap()))
+        lock.find_tool(&args.value_of("NAME").unwrap())
     };
 
+    let mut tool_map: BTreeMap<String, BinaryHeap<ToolVersion>> = BTreeMap::new();
+    for tool in tool_list {
+        let tool_list = tool_map.entry(tool.name.clone()).or_insert_with(|| BinaryHeap::new() );
+
+        tool_list.push(tool);
+    }
+
     let include_missing = args.is_present("include_missing");
-    let global_state = get_global_state(&config)?;
 
-    for tool_name in tool_names {
-        let tool: &ToolGlobalState = match global_state.tools.get(&tool_name) {
-            Some(tool) => tool,
-            None => err!(ConfigError::ToolNotFound(tool_name))
-        };
+    info!("Lock file located at {}", config_file.lock_path.to_str().unwrap());
+    info!("Config file located at {}", config_file.config_path.to_str().unwrap());
 
-        println!("Tool: {}", tool_name);
-
-        let mut versions: Vec<ToolVersion> = Vec::new();
-        versions.extend(tool.get_all_versions().into_iter());
+    for (tool_name, versions) in tool_map.iter() {
+        info!("Tool: {}", tool_name);
 
         let mut lines: Vec<String> = Vec::new();
-        versions.sort_by(|a, b| b.created_at().cmp(&a.created_at()));
 
-        for version in versions {
-            match (include_missing, version) {
-                (true, ToolVersion::NoArtifact(no_art)) => lines.push(s!(format!("{} - Artifact missing", no_art.name))),
-                (_, ToolVersion::Artifact(art)) => lines.push(s!(format!("{}", art.name))),
-                _ => {}
+        for version in versions.iter() {
+            if version.is_downloadable() {
+                let line = if version.artifact_exists() {
+                    format!("{} - {} - Installed", version.name, version.version)
+                } else {
+                    format!("{} - {}", version.name, version.version)
+                };
+
+                lines.push(line);
+            } else if include_missing {
+                lines.push(format!("{} - {} - Artifact not avaliable", version.name, version.version));
             }
         }
 
@@ -79,13 +80,12 @@ pub fn run_unlock_tool(_args: &ArgMatches) -> CliResult { err!(()) }
 
 pub fn run_status(_args: &ArgMatches) -> CliResult { err!(()) }
 
-pub fn run_update(args: &ArgMatches) -> CliResult { 
-    let config = get_config(args)?;
-    let global_state = get_global_state(&config)?;
+pub fn run_update(config_file: &ConfigFiles, args: &ArgMatches) -> CliResult { 
+    let lock = get_global_config(config_file, args)?;
 
-    let tool_names: Vec<String> = config.tools().keys().map(|x| s!(x)).collect();
-    
-    match download_tools(&global_state, tool_names) {
+    let wanted_versions: Vec<ToolVersion> = lock.get_all_wanted();
+
+    match download_tools(&lock, wanted_versions) {
         Ok(_) => Ok(0),
         Err(e) => Err(e)
     }

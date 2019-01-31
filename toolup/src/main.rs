@@ -23,10 +23,10 @@ mod storage;
 mod common;
 mod commands;
 
+use std::path::{Path, PathBuf};
+
 use directories::ProjectDirs;
-
-use clap::App;
-
+use clap::{App, ArgMatches};
 
 lazy_static! {
     pub static ref CONFIG_DIR: String = {
@@ -40,6 +40,31 @@ lazy_static! {
     };
 }
 
+pub struct ConfigFiles {
+    pub lock_path: PathBuf,
+    pub config_path: PathBuf
+}
+
+fn find_config_files(args: &ArgMatches) -> ConfigFiles {
+    let config_path = match args.value_of("config") {
+        Some(config_file) => PathBuf::from(config_file),
+        None => {
+            let toolup_config_dir = Path::new(CONFIG_DIR.as_str());
+
+            toolup_config_dir.join(Path::new("toolup.toml")).to_path_buf()
+        }
+    };
+
+    let lock_path = match args.value_of("lock") {
+        Some(config_file) => PathBuf::from(config_file),
+        None => {
+            let toolup_config_dir = Path::new(CONFIG_DIR.as_str());
+            toolup_config_dir.join(Path::new("toolup.lock")).to_path_buf()
+        }
+    };
+    
+    ConfigFiles { lock_path, config_path }
+}
 
 fn main() {
     let yml = load_yaml!("cli.yaml");
@@ -53,12 +78,14 @@ fn main() {
         matches.is_present("quite"),
     );
 
+    let config_files = find_config_files(&matches);
+
     let command = match matches.subcommand() {
-        ("show-version", Some(cmd_match)) => commands::run_show_version(cmd_match),
+        ("show-version", Some(cmd_match)) => commands::run_show_version(&config_files, cmd_match),
         ("lock-tool", Some(cmd_match)) => commands::run_lock_tool(cmd_match),
         ("unlock-tool", Some(cmd_match)) => commands::run_unlock_tool(cmd_match),
         ("status", Some(cmd_match)) => commands::run_status(cmd_match),
-        ("update", Some(cmd_match)) => commands::run_update(cmd_match),
+        ("update", Some(cmd_match)) => commands::run_update(&config_files, cmd_match),
         ("run", Some(cmd_match)) => commands::run_exec(cmd_match),
         _ => { panic!("This is a bug, please report the command wasn't found.")}
     };

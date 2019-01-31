@@ -33,6 +33,12 @@ args:
         long: config
         global: true
         takes_value: true
+
+    - lock_file:
+        help: Path to the lock file to use from toolup
+        long: lock
+        global: true
+        takes_value: true
     
     - github_api_token:
         help: Token to use to talk to GitHub's API's
@@ -49,10 +55,11 @@ args:
 
 subcommands:
     - show-version:
+        alias: show-versions
         settings:
             - ArgRequiredElseHelp
         about: Shows the known versions for a given tool
-        group:
+        groups:
             - opt:
                 required: true
                 args:
@@ -71,48 +78,48 @@ subcommands:
                 long: include-missing
                 short: m
 
-    - lock-tool:
-        settings:
-            - ArgRequiredElseHelp
-        about: Toolup will no longer check for later versions for a given tool
-        group:
-            - opt:
-                required: true
-                args:
-                  - TOOL
-                  - all
-        args:
-            - TOOL:
-                help: Name of the tool to look up
-                takes_value: true
-                requires: 
-                    - VERSION
-            - VERSION:
-                help: Version of tool
-                takes_value: true
-            - all:
-                help: Apply to all tools. When specified TOOL and VERSION are no longer required.
-                long: all
-                short: a
+    # - lock-tool:
+    #     settings:
+    #         - ArgRequiredElseHelp
+    #     about: Toolup will no longer check for later versions for a given tool
+    #     groups:
+    #         - opt:
+    #             required: true
+    #             args:
+    #               - TOOL
+    #               - all
+    #     args:
+    #         - TOOL:
+    #             help: Name of the tool to look up
+    #             takes_value: true
+    #             requires: 
+    #                 - VERSION
+    #         - VERSION:
+    #             help: Version of tool
+    #             takes_value: true
+    #         - all:
+    #             help: Apply to all tools. When specified TOOL and VERSION are no longer required.
+    #             long: all
+    #             short: a
 
-    - unlock-tool:
-        settings:
-            - ArgRequiredElseHelp
-        about: Toolup will not check for newer versions of TOOL, or ALL tools
-        group:
-          - opt:
-              required: true
-              args:
-                - TOOL
-                - all
-        args:
-            - TOOL:
-                help: Name of the tool to look up
-                takes_value: true
-            - all:
-                help: Apply to all tools
-                long: all
-                short: a
+    # - unlock-tool:
+    #     settings:
+    #         - ArgRequiredElseHelp
+    #     about: Toolup will not check for newer versions of TOOL, or ALL tools
+    #     groups:
+    #       - opt:
+    #           required: true
+    #           args:
+    #             - TOOL
+    #             - all
+    #     args:
+    #         - TOOL:
+    #             help: Name of the tool to look up
+    #             takes_value: true
+    #         - all:
+    #             help: Apply to all tools
+    #             long: all
+    #             short: a
 
     - status:
         about: Reports everything Tookup knows, which versions have been downloaded, where, etc.

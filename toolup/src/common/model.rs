@@ -19,7 +19,7 @@ impl GlobalConfig {
 }
 
 #[serde(rename_all = "kebab-case")]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Tokens {
     pub github: Option<String>
 }
@@ -81,8 +81,8 @@ impl ArtifactSource {
 
     pub fn path_to_art(&self) -> PathBuf {
         match self {
-            ArtifactSource::Zip { name: _, path: path } => PathBuf::from(path),
-            ArtifactSource::TGZ { name: _, path: path } => PathBuf::from(path),
+            ArtifactSource::Zip { name: _, path } => PathBuf::from(path),
+            ArtifactSource::TGZ { name: _, path } => PathBuf::from(path),
             ArtifactSource::Raw { name } => PathBuf::from(name)
         }
     }
