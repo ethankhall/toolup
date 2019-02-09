@@ -116,7 +116,7 @@ impl ToolLock {
             WantedVersion::Latest => {
                 let mut versions = self.find_tool(tool_name);
                 versions.sort_by_key(|x| x.created_at);
-                match versions.first() {
+                match versions.last() {
                     Some(x) => Some(x.clone()),
                     None => None
                 }

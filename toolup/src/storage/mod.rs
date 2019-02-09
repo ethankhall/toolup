@@ -23,6 +23,8 @@ pub fn download_tools(config: &ToolLock, versions: Vec<ToolVersion>) -> Result<(
     pb.enable_steady_tick(100);
 
     for version in versions {
+        debug!("Attempting to download {:?}", version);
+
         pb.inc(1);
         pb.set_message(&version.name);
          match download_tool(&version, &config.get_tokens()) {
@@ -75,24 +77,23 @@ pub fn download_tool(tool: &ToolVersion, tokens: &Tokens) -> Result<bool, CliErr
         },
     }
 
-    let temp_file = download_dir.to_path_buf();
     download_dir.pop();
     download_dir.push(&tool.version);
 
-    debug!("Downloading {} into {:#?}", tool.name, download_dir);
+    debug!("Downloading {} into {:#?} using {:#?}", tool.name, download_dir, part_path);
 
     fs::create_dir_all(&download_dir)?;
 
     match tool.art_type {
         ArtifactType::Raw => {
-            if let Err(e) = fs::rename(temp_file, tool.exec_path.clone()) {
+            if let Err(e) = fs::rename(part_path, download_dir.join(&tool.exec_path)) {
                 err!(IOError::UnableToMoveArtifact(e.to_string()))
             }
         },
         ArtifactType::Tgz => {
-            let file = match fs::File::open(&temp_file) {
+            let file = match fs::File::open(&part_path) {
                 Ok(file) => file,
-                Err(e) => err!(IOError::UnableToReadFile(temp_file, e.to_string()))
+                Err(e) => err!(IOError::UnableToReadFile(part_path, e.to_string()))
             };
 
             let mut gz: Vec<u8> = Vec::new();
@@ -107,12 +108,12 @@ pub fn download_tool(tool: &ToolVersion, tokens: &Tokens) -> Result<bool, CliErr
                 err!(IOError::UnableToExtractFile(e.to_string()))
             }
 
-            let _ = fs::remove_file(&temp_file);
+            let _ = fs::remove_file(&part_path);
         },
         ArtifactType::Zip => {
-            let file = match fs::File::open(&temp_file) {
+            let file = match fs::File::open(&part_path) {
                 Ok(file) => file,
-                Err(e) => err!(IOError::UnableToReadFile(temp_file, e.to_string()))
+                Err(e) => err!(IOError::UnableToReadFile(part_path, e.to_string()))
             };
 
             let mut archive = zip::ZipArchive::new(file).unwrap();
@@ -132,11 +133,11 @@ pub fn download_tool(tool: &ToolVersion, tokens: &Tokens) -> Result<bool, CliErr
                 }
             }
 
-            let _ = fs::remove_file(&temp_file);
+            let _ = fs::remove_file(&part_path);
         }
     }
 
-    Ok(false)
+    Ok(true)
 }
 
 pub fn update_global_state(lock: ToolLock, config: &GlobalConfig) -> Result<ToolLock, CliError> {
