@@ -9,6 +9,7 @@ use crate::err;
 use crate::ConfigFiles;
 use crate::storage::{download_tools, update_global_state};
 use crate::storage::lock::*;
+use crate::storage::link::*;
 
 pub type CliResult = Result<i32, CliError>;
 
@@ -85,7 +86,11 @@ pub fn run_update(config_file: &ConfigFiles, args: &ArgMatches) -> CliResult {
 
     let wanted_versions: Vec<ToolVersion> = lock.get_all_wanted();
 
-    match download_tools(&lock, wanted_versions) {
+    if let Err(e) = download_tools(&lock, &wanted_versions) {
+        return Err(e);
+    }
+
+    match update_links(&wanted_versions) {
         Ok(_) => Ok(0),
         Err(e) => Err(e)
     }

@@ -1,5 +1,4 @@
 use std::collections::BTreeMap;
-use std::path::PathBuf;
 
 #[serde(rename_all = "kebab-case")]
 #[derive(Serialize, Deserialize, Debug)]
@@ -46,10 +45,6 @@ impl ApplicationConfig {
     pub fn update_frequency<'a>(&'a self) -> &'a UpdateFrequency {
         &self.update_frequency
     }
-
-    pub fn artifact<'a>(&'a self) -> &'a ArtifactSource {
-        &self.artifact
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -77,14 +72,6 @@ impl ArtifactSource {
             ArtifactSource::TGZ { name, path: _ } => name,
             ArtifactSource::Raw { name } => name
         }.to_string()
-    }
-
-    pub fn path_to_art(&self) -> PathBuf {
-        match self {
-            ArtifactSource::Zip { name: _, path } => PathBuf::from(path),
-            ArtifactSource::TGZ { name: _, path } => PathBuf::from(path),
-            ArtifactSource::Raw { name } => PathBuf::from(name)
-        }
     }
 }
 

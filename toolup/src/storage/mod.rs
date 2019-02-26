@@ -1,7 +1,7 @@
 pub mod github;
 pub mod lock;
+pub mod link;
 
-use std::path::{Path, PathBuf};
 use std::io::Read;
 use std::fs;
 
@@ -12,21 +12,47 @@ use tar::Archive;
 use self::lock::*;
 use crate::common::error::*;
 use crate::common::model::*;
-use crate::{ConfigFiles, err};
+use crate::err;
 
-pub fn download_tools(config: &ToolLock, versions: Vec<ToolVersion>) -> Result<(), CliError> {
-    let pb = ProgressBar::new(versions.len() as u64);
-    let spinner_style = ProgressStyle::default_spinner()
-        .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
-        .template("{prefix:.bold.dim} {spinner} [{pos}/{len}] Downloading {wide_msg}");
-    pb.set_style(spinner_style.clone());
-    pb.enable_steady_tick(100);
+struct ProgressBarHelper {
+    pb: Option<ProgressBar>
+}
+
+impl ProgressBarHelper {
+    fn new(len: u64) -> Self {
+        if atty::isnt(atty::Stream::Stdout) {
+            ProgressBarHelper { pb: None }
+        } else {
+            let pb = ProgressBar::new(len);
+            let spinner_style = ProgressStyle::default_spinner()
+                .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
+                .template("{prefix:.bold.dim} {spinner} [{pos}/{len}] Downloading {wide_msg}");
+            pb.set_style(spinner_style.clone());
+            pb.enable_steady_tick(100);
+            ProgressBarHelper { pb: Some(pb) }
+        }
+    }
+    
+    fn inc(&self, message: &str) {
+        if let Some(pb) = &self.pb {
+            pb.inc(1);
+            pb.set_message(message);
+        }
+    }
+
+    fn done(&self) {
+        if let Some(pb) = &self.pb {
+            pb.finish_and_clear();
+        }
+    }
+}
+
+pub fn download_tools(config: &ToolLock, versions: &Vec<ToolVersion>) -> Result<(), CliError> {
+    let pb = ProgressBarHelper::new(versions.len() as u64);
 
     for version in versions {
         debug!("Attempting to download {:?}", version);
-
-        pb.inc(1);
-        pb.set_message(&version.name);
+        pb.inc(&version.name);
          match download_tool(&version, &config.get_tokens()) {
             Ok(true) => {},
             Ok(false) => {
@@ -36,6 +62,7 @@ pub fn download_tools(config: &ToolLock, versions: Vec<ToolVersion>) -> Result<(
         }
     }
 
+    pb.done();
     Ok(())
 }
 
@@ -43,6 +70,8 @@ pub fn download_tool(tool: &ToolVersion, tokens: &Tokens) -> Result<bool, CliErr
     if tool.artifact_exists() {
         return Ok(true);
     }
+
+    debug!("Downloading tool: {:?}", tool);
 
     let client = reqwest::Client::new();
     let req = client.get(&tool.download_url);

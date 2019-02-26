@@ -24,3 +24,4 @@ tar = "0.4.20"
 zip = "0.5"
 rusqlite = { version = "0.16", features = ["bundled", "chrono"] }
 lazy_static = "1.2"
+atty = "0.2"

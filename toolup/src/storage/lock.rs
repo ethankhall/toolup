@@ -81,12 +81,7 @@ impl ToolLock {
         let tools = self.tools.read().unwrap();
         tools.iter().find(|x| x.name == tool_name && x.version == version).map(|x| x.clone())
     }
-
-    pub fn find_versions_for_tool(&self, tool_name: &str) -> Vec<String> {
-        let tools = self.tools.read().unwrap();
-        tools.iter().filter(|x| x.name == tool_name).map(|x| x.version.clone()).collect()
-    }
-
+    
     pub fn get_all_tools(&self) -> Vec<ToolVersion> {
         let tools = self.tools.read().unwrap();
         tools.clone()

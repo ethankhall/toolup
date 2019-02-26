@@ -54,6 +54,8 @@ args:
         env: GITHUB_API_SERVER
 
 subcommands:
+    - path:
+        about: Use in shell config so you can use the latest versions
     - show-version:
         alias: show-versions
         settings:
