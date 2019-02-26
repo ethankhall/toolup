@@ -6,49 +6,16 @@ use std::io::Read;
 use std::fs;
 
 use flate2::read::GzDecoder;
-use indicatif::{ProgressBar, ProgressStyle};
 use tar::Archive;
 
 use self::lock::*;
 use crate::common::error::*;
 use crate::common::model::*;
 use crate::err;
-
-struct ProgressBarHelper {
-    pb: Option<ProgressBar>
-}
-
-impl ProgressBarHelper {
-    fn new(len: u64) -> Self {
-        if atty::isnt(atty::Stream::Stdout) {
-            ProgressBarHelper { pb: None }
-        } else {
-            let pb = ProgressBar::new(len);
-            let spinner_style = ProgressStyle::default_spinner()
-                .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
-                .template("{prefix:.bold.dim} {spinner} [{pos}/{len}] Downloading {wide_msg}");
-            pb.set_style(spinner_style.clone());
-            pb.enable_steady_tick(100);
-            ProgressBarHelper { pb: Some(pb) }
-        }
-    }
-    
-    fn inc(&self, message: &str) {
-        if let Some(pb) = &self.pb {
-            pb.inc(1);
-            pb.set_message(message);
-        }
-    }
-
-    fn done(&self) {
-        if let Some(pb) = &self.pb {
-            pb.finish_and_clear();
-        }
-    }
-}
+use crate::common::progress::*;
 
 pub fn download_tools(config: &ToolLock, versions: &Vec<ToolVersion>) -> Result<(), CliError> {
-    let pb = ProgressBarHelper::new(versions.len() as u64);
+    let pb = ProgressBarHelper::new(versions.len() as u64, ProgressBarType::Downloading);
 
     for version in versions {
         debug!("Attempting to download {:?}", version);
@@ -72,9 +39,17 @@ pub fn download_tool(tool: &ToolVersion, tokens: &Tokens) -> Result<bool, CliErr
     }
 
     debug!("Downloading tool: {:?}", tool);
+    
+    let url = match &tool.download_url {
+        Some(url) => url.to_string(),
+        None => {
+            eprintln!("Unable to download {}", &tool.name);
+            err!(ConfigError::ToolCanNotBeDownloaded(s!(tool.name)));
+        }
+    };
 
     let client = reqwest::Client::new();
-    let req = client.get(&tool.download_url);
+    let req = client.get(&url);
 
     let req = match &tool.auth_token_source {
         AuthTokenSource::None => req,
@@ -171,30 +146,31 @@ pub fn download_tool(tool: &ToolVersion, tokens: &Tokens) -> Result<bool, CliErr
 
 pub fn update_global_state(lock: ToolLock, config: &GlobalConfig) -> Result<ToolLock, CliError> {
     lock.update_tokens(&config.tokens);
+    lock.update_definations(&config.tools());
 
-    let global_config_tools = config.tools();
-    let pb = ProgressBar::new(global_config_tools.len() as u64);
-    let spinner_style = ProgressStyle::default_spinner()
-        .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
-        .template("{prefix:.bold.dim} {spinner} [{pos}/{len}] Updating {wide_msg}");
-    pb.set_style(spinner_style.clone());
-    pb.enable_steady_tick(100);
+    pull_for_latest(lock)
+}
 
-    for (name, tool) in global_config_tools.into_iter() {
-        pb.inc(1);
-        pb.set_message(&name);
+pub fn pull_for_latest(lock: ToolLock) -> Result<ToolLock, CliError> {
+    let global_config_tools = lock.get_definations();
+    let pb = ProgressBarHelper::new(global_config_tools.len() as u64, ProgressBarType::Updating);
 
-        let versions = match tool.version_source() {
+    for tool in global_config_tools {
+        let name = tool.name;
+        let config = tool.config;
+        pb.inc(&name);
+
+        let versions = match config.version_source() {
             VersionSource::GitHub { owner, repo } => {
                 let token = github::get_github_token(&lock.get_tokens())?;
-                github::get_current_details(s!(owner), s!(repo), token, &name, &tool.artifact)?
+                github::get_current_details(s!(owner), s!(repo), token, &name, &config.artifact)?
             }
         };
 
         lock.add_all(versions);
     }
 
-    pb.finish_and_clear();
+    pb.done();
     
     match write_lock(&lock) {
         Ok(_) => Ok(lock),

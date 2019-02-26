@@ -56,7 +56,7 @@ macro_rules! write_with_line {
 
 impl fmt::Display for CliError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
+        match &self {
             CliError::Unknown(site, _) => write!(f, "[{}] Unknown Error... Sorry!", site),
             CliError::IO(site, e) => write_with_line!(f, site, e),
             CliError::Config(site, e) => write_with_line!(f, site, e),
@@ -101,7 +101,8 @@ pub enum ConfigError {
     ConfigFormatError(String),
     ConfigFileNotFound(PathBuf),
     ToolNotFound(String),
-    UnableToWriteConfig(String)
+    UnableToWriteConfig(String),
+    ToolCanNotBeDownloaded(String)
 }
 
 #[derive(Debug, ErrorCode)]

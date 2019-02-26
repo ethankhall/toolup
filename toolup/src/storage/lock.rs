@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::cell::RefCell;
 use std::fs;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::cmp::Ordering;
 use std::sync::RwLock;
 
@@ -11,14 +11,14 @@ use chrono::serde::ts_milliseconds;
 use crate::err;
 use crate::common::error::*;
 use crate::common::model::Tokens;
-
-pub const NO_DOWNLOAD_URL: &'static str = "No URL";
+use crate::common::model::ApplicationConfig;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct ToolLock {
+    wanted: RwLock<HashMap<String, WantedVersion>>,
     tokens: RefCell<Tokens>,
+    definations: RwLock<Vec<ToolDefinition>>,
     tools: RwLock<Vec<ToolVersion>>,
-    wanted: RwLock<HashMap<String, WantedVersion>>
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -27,13 +27,19 @@ pub enum WantedVersion {
     Specific(String)
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct ToolDefinition {
+    pub name: String,
+    pub config: ApplicationConfig
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub struct ToolVersion {
     pub name: String,
     pub version: String,
     #[serde(with = "ts_milliseconds")]
     pub created_at: DateTime<Utc>,
-    pub download_url: String,
+    pub download_url: Option<String>,
     pub exec_path: String,
     pub art_type: ArtifactType,
     pub auth_token_source: AuthTokenSource
@@ -87,6 +93,19 @@ impl ToolLock {
         tools.clone()
     }
 
+    pub fn update_definations(&self, definations: &BTreeMap<String, ApplicationConfig>) {
+        let mut defs = self.definations.write().unwrap();
+        defs.clear();
+
+        for (key, value) in definations {
+            defs.push(ToolDefinition { name: s!(key), config: value.clone() });
+        }
+    }
+
+    pub fn get_definations(&self) -> Vec<ToolDefinition> {
+        self.definations.read().unwrap().to_vec()
+    }
+
     pub fn update_tokens(&self, tokens: &Tokens) {
         self.tokens.replace(tokens.clone());
     }
@@ -123,7 +142,12 @@ impl ToolLock {
 
 impl std::default::Default for ToolLock {
     fn default() -> Self {
-        ToolLock { tokens: RefCell::default(), tools: RwLock::new(Vec::new()), wanted: RwLock::new(HashMap::new()) }
+        ToolLock {
+            tokens: RefCell::default(),
+            tools: RwLock::new(Vec::new()),
+            wanted: RwLock::new(HashMap::new()),
+            definations: RwLock::new(Vec::new()) 
+        }
     }
 }
 
@@ -146,7 +170,7 @@ impl ToolVersion {
     }
 
     pub fn is_downloadable(&self) -> bool {
-        self.download_url != NO_DOWNLOAD_URL
+        self.download_url.is_some()
     }
 }
 
@@ -172,7 +196,7 @@ pub fn write_lock(lock: &ToolLock) -> Result<(), CliError> {
 
     debug!("Writing lock to {:#?}.", &global_path);
 
-    let text = match toml::to_string(&lock) {
+    let text = match serde_json::to_string_pretty(&lock) {
         Ok(text) => text,
         Err(err) => {
             warn!("Unable to seralize state file.");
@@ -198,7 +222,7 @@ pub fn read_existing_lock(global_path: PathBuf) -> Option<ToolLock> {
             Err(_) => return None
         };
 
-        return match toml::from_str::<ToolLock>(&contents) {
+        return match serde_json::from_str::<ToolLock>(&contents) {
             Ok(config) => Some(config),
             Err(_) => {
                 warn!("Unable to deserialize existing state file, dropping it.");
@@ -214,7 +238,6 @@ pub fn read_existing_lock(global_path: PathBuf) -> Option<ToolLock> {
 mod test {
 
     use super::*;
-    use toml;
 
     #[test]
     fn test_new_and_add() {
@@ -226,15 +249,15 @@ mod test {
             name: s!("foo"),
             version: s!("bar"),
             created_at: now,
-            download_url: s!("http://localhost/help"),
+            download_url: Some(s!("http://localhost/help")),
             exec_path: s!("foo.exe"),
             art_type: ArtifactType::Zip,
             auth_token_source: AuthTokenSource::None
         };
 
         lock.add_new(tool_version);
-        let tool_lock = toml::to_string(&lock).unwrap();
+        let tool_lock = serde_json::to_string(&lock).unwrap();
 
-        toml::from_str::<ToolLock>(&tool_lock).unwrap();
+        serde_json::from_str::<ToolLock>(&tool_lock).unwrap();
     }
 }

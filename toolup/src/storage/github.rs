@@ -111,7 +111,7 @@ fn parse_get_release_response(body: JsonValue, tool_name: &str, artifact: &Artif
                                     name: s!(tool_name),
                                     version: name,
                                     created_at: created_at.with_timezone(&Utc),
-                                    download_url: path.unwrap_or_else(|| s!(super::lock::NO_DOWNLOAD_URL)),
+                                    download_url: path,
                                     exec_path: s!(exec_path),
                                     art_type: art_type.clone(),
                                     auth_token_source: AuthTokenSource::GitHub

@@ -19,6 +19,8 @@ extern crate zip;
 extern crate atty;
 #[macro_use]
 extern crate lazy_static;
+#[cfg(target_family = "unix")]
+extern crate nix;
 
 mod storage;
 mod common;
@@ -36,13 +38,14 @@ lazy_static! {
     };
 
     pub static ref CACHE_DIR: String = {
-        let project_dirs = ProjectDirs::from("io", "ehdev", "toolup.cache").expect("To create project dirs");
+        let project_dirs = ProjectDirs::from("io", "ehdev", "toolup").expect("To create project dirs");
         s!(project_dirs.cache_dir().to_str().unwrap())
     };
 
     pub static ref PATH_DIR: String = {
-        let project_dirs = ProjectDirs::from("io", "ehdev", "toolup.bin").expect("To create project dirs");
-        s!(project_dirs.cache_dir().to_str().unwrap())
+        let project_dirs = ProjectDirs::from("io", "ehdev", "toolup").expect("To create project dirs");
+        let path_dir = project_dirs.cache_dir().join("path");
+        s!(path_dir.to_str().unwrap())
     };
 }
 
@@ -91,9 +94,9 @@ fn main() {
         ("show-version", Some(cmd_match)) => commands::run_show_version(&config_files, cmd_match),
         ("lock-tool", Some(cmd_match)) => commands::run_lock_tool(cmd_match),
         ("unlock-tool", Some(cmd_match)) => commands::run_unlock_tool(cmd_match),
-        ("status", Some(cmd_match)) => commands::run_status(cmd_match),
+        ("status", Some(cmd_match)) => commands::run_status(&config_files, cmd_match),
         ("update", Some(cmd_match)) => commands::run_update(&config_files, cmd_match),
-        ("run", Some(cmd_match)) => commands::run_exec(cmd_match),
+        ("run", Some(cmd_match)) => commands::run_exec(&config_files, cmd_match),
         _ => { panic!("This is a bug, please report the command wasn't found.")}
     };
 

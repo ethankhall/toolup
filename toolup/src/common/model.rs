@@ -29,7 +29,7 @@ impl Default for Tokens {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct ApplicationConfig {
     pub version_source: VersionSource,
@@ -45,16 +45,24 @@ impl ApplicationConfig {
     pub fn update_frequency<'a>(&'a self) -> &'a UpdateFrequency {
         &self.update_frequency
     }
+
+    pub fn clone(&self) -> Self {
+        ApplicationConfig {
+            version_source: self.version_source.clone(),
+            update_frequency: self.update_frequency.clone(),
+            artifact: self.artifact.clone()
+        }
+    }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum VersionSource {
     #[serde(alias = "github")]
     GitHub { owner: String, repo: String }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum ArtifactSource {
     #[serde(alias = "zip", alias = "ZIP")]
@@ -75,7 +83,7 @@ impl ArtifactSource {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub enum UpdateFrequency {
     #[serde(alias = "fast")]
     Fast,

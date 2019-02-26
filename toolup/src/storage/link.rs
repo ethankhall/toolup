@@ -10,6 +10,8 @@ pub fn update_links(versions: &Vec<ToolVersion>) -> Result<(), CliError> {
     let path_dir = Path::new(crate::PATH_DIR.as_str());
     let mut existing_tools: HashSet<OsString> = HashSet::new();
 
+    fs::create_dir_all(&path_dir)?;
+
     if let Ok(dirs) = fs::read_dir(path_dir) {
         for entry in dirs {
             if let Ok(entry) = entry {
@@ -19,11 +21,20 @@ pub fn update_links(versions: &Vec<ToolVersion>) -> Result<(), CliError> {
     }
 
     for version in versions {
-        let exec_path = Path::new(&version.exec_path);
+        let exec_path = version.exec_path();
         let latest_path = path_dir.join(exec_path.file_name().unwrap());
 
+        debug!("Linking {:?} -> {:?}", &exec_path, &latest_path);
+
         if latest_path.exists() {
-            if let Err(e) = fs::remove_file(&latest_path) {
+            let mut del_file = latest_path.to_path_buf();
+            let mut file_name = del_file.file_name().unwrap().to_os_string();
+            file_name.push(".del");
+
+            del_file.set_file_name(file_name);
+            if let Err(e) = fs::rename(&latest_path, &del_file) {
+                eprintln!("Unable to rename link: {}", e);
+            } else if let Err(e) = fs::remove_file(&del_file) {
                 eprintln!("Unable to remove {}", e);
             }
         }
