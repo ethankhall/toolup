@@ -1,10 +1,10 @@
 use json::JsonValue;
 use chrono::{DateTime, Utc};
 
-use crate::common::model::{ArtifactSource, Tokens};
+use crate::config::model::{ArtifactSource, Tokens};
 use crate::common::error::*;
 use crate::err;
-use super::lock::*;
+use crate::config::lock::*;
 
 const GET_RELEASES: &'static str = "
 query ($owner: String!, $repo: String!, $release_count:Int, $artifact_name: String) {

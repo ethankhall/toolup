@@ -80,51 +80,80 @@ subcommands:
                 long: include-missing
                 short: m
 
-    # - lock-tool:
-    #     settings:
-    #         - ArgRequiredElseHelp
-    #     about: Toolup will no longer check for later versions for a given tool
-    #     groups:
-    #         - opt:
-    #             required: true
-    #             args:
-    #               - TOOL
-    #               - all
-    #     args:
-    #         - TOOL:
-    #             help: Name of the tool to look up
-    #             takes_value: true
-    #             requires: 
-    #                 - VERSION
-    #         - VERSION:
-    #             help: Version of tool
-    #             takes_value: true
-    #         - all:
-    #             help: Apply to all tools. When specified TOOL and VERSION are no longer required.
-    #             long: all
-    #             short: a
-
-    # - unlock-tool:
-    #     settings:
-    #         - ArgRequiredElseHelp
-    #     about: Toolup will not check for newer versions of TOOL, or ALL tools
-    #     groups:
-    #       - opt:
-    #           required: true
-    #           args:
-    #             - TOOL
-    #             - all
-    #     args:
-    #         - TOOL:
-    #             help: Name of the tool to look up
-    #             takes_value: true
-    #         - all:
-    #             help: Apply to all tools
-    #             long: all
-    #             short: a
-
     - status:
         about: Reports everything Tookup knows, which versions have been downloaded, where, etc.
+
+    - init:
+        about: Creates a default config
+        groups:
+            - gh:
+                required: true
+                args:
+                    - github_api_token
+
+    - manage:
+        about: Mange the installed tools
+        settings:
+            - SubCommandRequiredElseHelp
+        subcommands:
+            - delete-tool:
+                about: Delete a tool
+                args:
+                    - NAME:
+                        help: Name to use the application to delete
+                        required: true
+                        takes_value: true
+
+            - add-tool:
+                about: Configure a new tool
+                groups:
+                    - source:
+                        required: true
+                        args:
+                            - github
+                    - artifact:
+                        required: true
+                        args:
+                            - raw
+                            - tgz
+                            - zip
+                args:
+                    - NAME:
+                        help: Name to use the application to add
+                        required: true
+                        takes_value: true
+
+                    - github:
+                        help: Use GitHub as the source for the tool.
+                        long: github
+                        takes_value: true
+                    
+                    - raw:
+                        help: Use the artifact as it exists (ie. not part of a compressed artifact)
+                        long: raw
+                        takes_value: true
+
+                    - tgz:
+                        help: Pull the application from inside a tgz file.
+                        long: tgz
+                        takes_value: true
+                        requires:
+                            - path
+                    
+                    - zip:
+                        help: Pull the application from inside a zio file.
+                        long: zip
+                        takes_value: true
+                        requires:
+                            - path
+
+                    - path:
+                        help: Path inside the compressed artifact to use as an application
+                        takes_value: true
+                        long: archive-path
+                        conflicts_with:
+                            - raw
+
 
     - update:
         about: Updates all tools to latest version (unless they are locked)

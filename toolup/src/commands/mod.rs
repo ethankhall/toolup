@@ -1,31 +1,23 @@
+pub mod manage;
+
 use std::collections::{BinaryHeap, BTreeMap};
 
 use clap::ArgMatches;
 
 use crate::common::error::*;
-use crate::common::config::*;
 use crate::err;
 
-use crate::ConfigFiles;
-use crate::storage::{pull_for_latest, download_tools, update_global_state};
-use crate::storage::lock::*;
+use crate::config::ConfigContainer;
+use crate::storage::{pull_for_latest, download_tools};
+use crate::config::lock::*;
 use crate::storage::link::*;
 
 pub type CliResult = Result<i32, CliError>;
 
-fn get_global_config(config_file: &ConfigFiles, args: &ArgMatches) -> Result<ToolLock, CliError> {
-    match read_existing_lock(config_file.lock_path.clone()) {
-        Some(config) => Ok(config),
-        None => {
-            let glocal_config = parse_config(config_file.config_path.clone(), args)?;
-            update_global_state(ToolLock::default(), &glocal_config)
-        }
-    }
-}
 
-pub fn run_show_version(config_file: &ConfigFiles, args: &ArgMatches) -> CliResult { 
-    let lock = get_global_config(config_file, args)?;
-    
+pub fn run_show_version(args: &ArgMatches) -> CliResult {
+    let lock = ToolLock::get_global_lock();
+
     let tool_list: Vec<ToolVersion> = if args.is_present("all") {
         lock.get_all_tools()
     } else {
@@ -40,7 +32,7 @@ pub fn run_show_version(config_file: &ConfigFiles, args: &ArgMatches) -> CliResu
     }
 
     let include_missing = args.is_present("include_missing");
-    print_current_state(config_file, tool_map, include_missing);
+    print_current_state(tool_map, include_missing);
 
     Ok(0)
 }
@@ -49,8 +41,8 @@ pub fn run_lock_tool(_args: &ArgMatches) -> CliResult { err!(()) }
 
 pub fn run_unlock_tool(_args: &ArgMatches) -> CliResult { err!(()) }
 
-pub fn run_status(config_file: &ConfigFiles, args: &ArgMatches) -> CliResult {
-    let lock = get_global_config(config_file, args)?;
+pub fn run_status(_args: &ArgMatches) -> CliResult {
+    let lock = ToolLock::get_global_lock();
     let tool_list: Vec<ToolVersion> = lock.get_all_tools();
 
     let mut tool_map: BTreeMap<String, BinaryHeap<ToolVersion>> = BTreeMap::new();
@@ -60,16 +52,18 @@ pub fn run_status(config_file: &ConfigFiles, args: &ArgMatches) -> CliResult {
         tool_list.push(tool);
     }
 
-    print_current_state(config_file, tool_map, true);
+    print_current_state(tool_map, true);
 
     Ok(0)
 }
 
-pub fn run_update(config_file: &ConfigFiles, args: &ArgMatches) -> CliResult { 
-    let lock = get_global_config(config_file, args)?;
-    let lock = pull_for_latest(lock)?;
+pub fn run_update(_args: &ArgMatches) -> CliResult { 
+    pull_for_latest()?;
+
+    let lock = ToolLock::get_global_lock();
 
     let wanted_versions: Vec<ToolVersion> = lock.get_all_wanted();
+    trace!("Wanted versions: {:?}", wanted_versions);
 
     if let Err(e) = download_tools(&lock, &wanted_versions) {
         return Err(e);
@@ -81,8 +75,8 @@ pub fn run_update(config_file: &ConfigFiles, args: &ArgMatches) -> CliResult {
     }
 }
 
-pub fn run_exec(config_file: &ConfigFiles, args: &ArgMatches) -> CliResult { 
-    let lock = get_global_config(config_file, args)?;
+pub fn run_exec(args: &ArgMatches) -> CliResult { 
+    let lock = ToolLock::get_global_lock();
 
     let tool = lock.get_wanted(args.value_of("TOOL").unwrap());
     if let Some(tool) = tool {
@@ -116,9 +110,8 @@ fn exec(path: String, args: Vec<String>) {
     process::exit(status.code().unwrap_or(0));
 }
 
-fn print_current_state(config_file: &ConfigFiles, tool_map: BTreeMap<String, BinaryHeap<ToolVersion>>, include_missing: bool) {
-    info!("Lock file located at {}", config_file.lock_path.to_str().unwrap());
-    info!("Config file located at {}", config_file.config_path.to_str().unwrap());
+fn print_current_state(tool_map: BTreeMap<String, BinaryHeap<ToolVersion>>, include_missing: bool) {
+    info!("Lock file located at {:?}", ConfigContainer::get_container_config().lock_config_path);
 
     for (tool_name, versions) in tool_map.iter() {
         info!("Tool: {}", tool_name);

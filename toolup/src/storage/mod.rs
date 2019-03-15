@@ -1,5 +1,4 @@
 pub mod github;
-pub mod lock;
 pub mod link;
 
 use std::io::Read;
@@ -8,9 +7,10 @@ use std::fs;
 use flate2::read::GzDecoder;
 use tar::Archive;
 
-use self::lock::*;
+use crate::config::ConfigContainer;
+use crate::config::lock::*;
 use crate::common::error::*;
-use crate::common::model::*;
+use crate::config::model::*;
 use crate::err;
 use crate::common::progress::*;
 
@@ -144,14 +144,9 @@ pub fn download_tool(tool: &ToolVersion, tokens: &Tokens) -> Result<bool, CliErr
     Ok(true)
 }
 
-pub fn update_global_state(lock: ToolLock, config: &GlobalConfig) -> Result<ToolLock, CliError> {
-    lock.update_tokens(&config.tokens);
-    lock.update_definations(&config.tools());
-
-    pull_for_latest(lock)
-}
-
-pub fn pull_for_latest(lock: ToolLock) -> Result<ToolLock, CliError> {
+pub fn pull_for_latest() -> Result<(), CliError> {
+    let mut lock = ToolLock::get_global_lock().clone();
+    
     let global_config_tools = lock.get_definations();
     let pb = ProgressBarHelper::new(global_config_tools.len() as u64, ProgressBarType::Updating);
 
@@ -172,8 +167,8 @@ pub fn pull_for_latest(lock: ToolLock) -> Result<ToolLock, CliError> {
 
     pb.done();
     
-    match write_lock(&lock) {
-        Ok(_) => Ok(lock),
-        Err(e) => Err(e)
-    }
+    ConfigContainer::set_lock_config(lock.clone());
+    ConfigContainer::write_config()?;
+
+    Ok(())
 }

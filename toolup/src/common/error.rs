@@ -101,6 +101,7 @@ pub enum ConfigError {
     ConfigFormatError(String),
     ConfigFileNotFound(PathBuf),
     ToolNotFound(String),
+    GitHubRepoNotValid(String),
     UnableToWriteConfig(String),
     ToolCanNotBeDownloaded(String)
 }

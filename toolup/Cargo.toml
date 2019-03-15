@@ -25,6 +25,7 @@ zip = "0.5"
 rusqlite = { version = "0.16", features = ["bundled", "chrono"] }
 lazy_static = "1.2"
 atty = "0.2"
+regex = "*"
 
 # [target.'cfg(target_family = "windows")'.dependencies]
 [target.'cfg(target_family = "unix")'.dependencies]

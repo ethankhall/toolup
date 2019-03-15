@@ -4,10 +4,10 @@ use std::ffi::OsString;
 use std::collections::HashSet;
 
 use crate::common::error::*;
-use crate::storage::lock::*;
+use crate::config::lock::*;
 
 pub fn update_links(versions: &Vec<ToolVersion>) -> Result<(), CliError> {
-    let path_dir = Path::new(crate::PATH_DIR.as_str());
+    let path_dir = Path::new(crate::CACHE_DIR.as_str());
     let mut existing_tools: HashSet<OsString> = HashSet::new();
 
     fs::create_dir_all(&path_dir)?;
