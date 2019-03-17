@@ -61,7 +61,7 @@ fn read_existing_lock(global_path: &PathBuf, args: &ArgMatches) -> Result<ToolLo
 
 #[cfg(test)]
 mod test {
-
+    use chrono::{DateTime, Utc};
     use super::*;
 
     #[test]

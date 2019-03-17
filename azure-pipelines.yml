@@ -68,6 +68,7 @@ jobs:
     dependsOn:
       - Mac_Build
       - Linux_Build
+      - Windows_Build
     steps:
       - task: DownloadBuildArtifacts@0
         inputs:
@@ -82,4 +83,4 @@ jobs:
           tree $SYSTEM_ARTIFACTSDIRECTORY
           git status
           ~/bin/crom tag-version --source local,github --ignore-changes
-          ~/bin/crom upload-artifacts --root-artifact-path=$SYSTEM_ARTIFACTSDIRECTORY linux mac
+          ~/bin/crom upload-artifacts --root-artifact-path=$SYSTEM_ARTIFACTSDIRECTORY linux mac windows
