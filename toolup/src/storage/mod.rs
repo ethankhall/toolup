@@ -11,7 +11,6 @@ use tar::Archive;
 use crate::common::error::*;
 use crate::common::progress::*;
 use crate::config::lock::*;
-use crate::config::model::*;
 use crate::config::ConfigContainer;
 use crate::err;
 

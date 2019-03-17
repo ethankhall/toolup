@@ -6,8 +6,6 @@ use chrono::serde::ts_milliseconds;
 use chrono::{DateTime, Utc};
 
 use super::ConfigContainer;
-use crate::config::model::ApplicationConfig;
-use crate::config::model::Tokens;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ToolLock {
@@ -15,6 +13,18 @@ pub struct ToolLock {
     pub tokens: Tokens,
     definations: Vec<ToolDefinition>,
     tools: Vec<ToolVersion>,
+}
+
+#[serde(rename_all = "kebab-case")]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Tokens {
+    pub github: Option<String>,
+}
+
+impl Default for Tokens {
+    fn default() -> Self {
+        Tokens { github: None }
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -192,4 +202,71 @@ impl PartialOrd for ToolVersion {
     fn partial_cmp(&self, other: &ToolVersion) -> Option<Ordering> {
         Some(self.cmp(other))
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub struct ApplicationConfig {
+    pub version_source: VersionSource,
+    pub update_frequency: UpdateFrequency,
+    pub artifact: ArtifactSource,
+}
+
+impl ApplicationConfig {
+    pub fn version_source<'a>(&'a self) -> &'a VersionSource {
+        &self.version_source
+    }
+
+    pub fn update_frequency<'a>(&'a self) -> &'a UpdateFrequency {
+        &self.update_frequency
+    }
+
+    pub fn clone(&self) -> Self {
+        ApplicationConfig {
+            version_source: self.version_source.clone(),
+            update_frequency: self.update_frequency.clone(),
+            artifact: self.artifact.clone(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(tag = "type")]
+pub enum VersionSource {
+    #[serde(alias = "github")]
+    GitHub { owner: String, repo: String },
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(tag = "type")]
+pub enum ArtifactSource {
+    #[serde(alias = "zip", alias = "ZIP")]
+    Zip { name: String, path: String },
+    #[serde(alias = "tgz", alias = "tar.gz")]
+    TGZ { name: String, path: String },
+    #[serde(alias = "raw")]
+    Raw { name: String },
+}
+
+impl ArtifactSource {
+    pub fn get_name(&self) -> String {
+        match self {
+            ArtifactSource::Zip { name, path: _ } => name,
+            ArtifactSource::TGZ { name, path: _ } => name,
+            ArtifactSource::Raw { name } => name,
+        }
+        .to_string()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub enum UpdateFrequency {
+    #[serde(alias = "fast")]
+    Fast,
+    #[serde(alias = "medium", alias = "med")]
+    Medium,
+    #[serde(alias = "slow")]
+    Slow,
+    #[serde(alias = "every-time", alias = "every")]
+    EveryTime,
 }

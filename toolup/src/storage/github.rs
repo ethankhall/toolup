@@ -3,7 +3,6 @@ use json::JsonValue;
 
 use crate::common::error::*;
 use crate::config::lock::*;
-use crate::config::model::{ArtifactSource, Tokens};
 use crate::err;
 
 const GET_RELEASES: &'static str = "

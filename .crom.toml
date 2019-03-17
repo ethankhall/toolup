@@ -1,0 +1,18 @@
+pattern = 'v0.1.%d'
+types = ["Cargo"]
+message-template = "Created {version} for release."
+
+[artifact.mac]
+paths = {toolup = "artifacts/toolup-mac/toolup"}
+compress = { name = "toolup-mac.tar.gz", format = "tgz" }
+target = "GitHub"
+
+[artifact.linux]
+paths = {toolup = "artifacts/toolup-linux/toolup"}
+compress = { name = "toolup-linux-musl.tar.gz", format = "tgz" }
+target = "GitHub"
+
+[artifact.windows]
+paths = { "toolup.exe" = "artifacts/toolup-windows/toolup.exe" }
+compress = { name = "toolup-windows.zip", format = "zip" }
+target = "GitHub"

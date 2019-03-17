@@ -5,8 +5,7 @@ use crate::common::error::*;
 use crate::err;
 
 use super::CliResult;
-use crate::config::lock::ToolLock;
-use crate::config::model::*;
+use crate::config::lock::*;
 use crate::config::ConfigContainer;
 
 pub fn delete_tool(arg: &ArgMatches) -> CliResult {

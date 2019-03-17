@@ -1,5 +1,4 @@
 pub mod lock;
-pub mod model;
 pub mod parse;
 
 use std::default::Default;
@@ -78,5 +77,4 @@ impl Default for ConfigContainer {
     }
 }
 
-pub use model::*;
 pub use parse::{initialize_configs, parse_config};
