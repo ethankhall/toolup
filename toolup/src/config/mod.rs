@@ -1,17 +1,13 @@
+pub mod lock;
 pub mod model;
 pub mod parse;
-pub mod lock;
 
 use std::default::Default;
-use std::path::{Path, PathBuf};
 use std::fs;
+use std::path::{Path, PathBuf};
 
-use clap::ArgMatches;
-use toml;
-
-use crate::*;
-use self::model::*;
 use crate::common::error::*;
+use crate::*;
 
 type Result<T> = std::result::Result<T, CliError>;
 
@@ -24,15 +20,19 @@ pub struct ConfigContainer {
 impl ConfigContainer {
     pub fn default_lock_config_path() -> PathBuf {
         let toolup_config_dir = Path::new(CONFIG_DIR.as_str());
-        toolup_config_dir.join(Path::new("toolup.lock")).to_path_buf()
+        toolup_config_dir
+            .join(Path::new("toolup.lock"))
+            .to_path_buf()
     }
 
     pub fn set_lock_config(tool_lock: lock::ToolLock) {
-        let lock_config_path = ConfigContainer::get_container_config().lock_config_path.clone();
+        let lock_config_path = ConfigContainer::get_container_config()
+            .lock_config_path
+            .clone();
 
         let new_container = ConfigContainer {
             lock_config_path: lock_config_path,
-            lock_config: Some(tool_lock)
+            lock_config: Some(tool_lock),
         };
 
         *crate::CONFIG_DATA.write().unwrap() = Box::new(new_container);
@@ -73,10 +73,10 @@ impl Default for ConfigContainer {
     fn default() -> Self {
         ConfigContainer {
             lock_config_path: ConfigContainer::default_lock_config_path(),
-            lock_config: None
+            lock_config: None,
         }
     }
 }
 
-pub use parse::{parse_config, initialize_configs};
 pub use model::*;
+pub use parse::{initialize_configs, parse_config};

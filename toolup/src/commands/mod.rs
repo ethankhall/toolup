@@ -1,19 +1,18 @@
 pub mod manage;
 
-use std::collections::{BinaryHeap, BTreeMap};
+use std::collections::{BTreeMap, BinaryHeap};
 
 use clap::ArgMatches;
 
 use crate::common::error::*;
 use crate::err;
 
-use crate::config::ConfigContainer;
-use crate::storage::{pull_for_latest, download_tools};
 use crate::config::lock::*;
+use crate::config::ConfigContainer;
 use crate::storage::link::*;
+use crate::storage::{download_tools, pull_for_latest};
 
 pub type CliResult = Result<i32, CliError>;
-
 
 pub fn run_show_version(args: &ArgMatches) -> CliResult {
     let lock = ToolLock::get_global_lock();
@@ -26,7 +25,9 @@ pub fn run_show_version(args: &ArgMatches) -> CliResult {
 
     let mut tool_map: BTreeMap<String, BinaryHeap<ToolVersion>> = BTreeMap::new();
     for tool in tool_list {
-        let tool_list = tool_map.entry(tool.name.clone()).or_insert_with(|| BinaryHeap::new() );
+        let tool_list = tool_map
+            .entry(tool.name.clone())
+            .or_insert_with(|| BinaryHeap::new());
 
         tool_list.push(tool);
     }
@@ -37,9 +38,13 @@ pub fn run_show_version(args: &ArgMatches) -> CliResult {
     Ok(0)
 }
 
-pub fn run_lock_tool(_args: &ArgMatches) -> CliResult { err!(()) }
+pub fn run_lock_tool(_args: &ArgMatches) -> CliResult {
+    err!(())
+}
 
-pub fn run_unlock_tool(_args: &ArgMatches) -> CliResult { err!(()) }
+pub fn run_unlock_tool(_args: &ArgMatches) -> CliResult {
+    err!(())
+}
 
 pub fn run_status(_args: &ArgMatches) -> CliResult {
     let lock = ToolLock::get_global_lock();
@@ -47,7 +52,9 @@ pub fn run_status(_args: &ArgMatches) -> CliResult {
 
     let mut tool_map: BTreeMap<String, BinaryHeap<ToolVersion>> = BTreeMap::new();
     for tool in tool_list {
-        let tool_list = tool_map.entry(tool.name.clone()).or_insert_with(|| BinaryHeap::new() );
+        let tool_list = tool_map
+            .entry(tool.name.clone())
+            .or_insert_with(|| BinaryHeap::new());
 
         tool_list.push(tool);
     }
@@ -57,7 +64,7 @@ pub fn run_status(_args: &ArgMatches) -> CliResult {
     Ok(0)
 }
 
-pub fn run_update(_args: &ArgMatches) -> CliResult { 
+pub fn run_update(_args: &ArgMatches) -> CliResult {
     pull_for_latest()?;
 
     let lock = ToolLock::get_global_lock();
@@ -71,30 +78,37 @@ pub fn run_update(_args: &ArgMatches) -> CliResult {
 
     match update_links(&wanted_versions) {
         Ok(_) => Ok(0),
-        Err(e) => Err(e)
+        Err(e) => Err(e),
     }
 }
 
-pub fn run_exec(args: &ArgMatches) -> CliResult { 
+pub fn run_exec(args: &ArgMatches) -> CliResult {
     let lock = ToolLock::get_global_lock();
 
     let tool = lock.get_wanted(args.value_of("TOOL").unwrap());
     if let Some(tool) = tool {
         let path = tool.exec_path();
-        let arg_path: Vec<String> = args.values_of("ARGS").unwrap_or_default().map(|x| s!(x)).collect();
+        let arg_path: Vec<String> = args
+            .values_of("ARGS")
+            .unwrap_or_default()
+            .map(|x| s!(x))
+            .collect();
         exec(s!(path.to_str().unwrap()), arg_path);
         return Ok(0);
     }
 
-    err!(ConfigError::ToolNotFound(s!(args.value_of("TOOL").unwrap())))
+    err!(ConfigError::ToolNotFound(s!(args
+        .value_of("TOOL")
+        .unwrap())))
 }
 
 #[cfg(target_family = "unix")]
 fn exec(path: String, args: Vec<String>) {
     use std::ffi::CString;
-    
-    CString::from(path.as_ptr());
-    nix::unistd::execv();
+
+    let path = CString::new(path).unwrap();
+    let argv: Vec<CString> = args.into_iter().map(|x| CString::new(x).unwrap()).collect();
+    nix::unistd::execv(&path, argv.as_slice()).unwrap();
 }
 
 #[cfg(target_family = "windows")]
@@ -111,7 +125,10 @@ fn exec(path: String, args: Vec<String>) {
 }
 
 fn print_current_state(tool_map: BTreeMap<String, BinaryHeap<ToolVersion>>, include_missing: bool) {
-    info!("Lock file located at {:?}", ConfigContainer::get_container_config().lock_config_path);
+    info!(
+        "Lock file located at {:?}",
+        ConfigContainer::get_container_config().lock_config_path
+    );
 
     for (tool_name, versions) in tool_map.iter() {
         info!("Tool: {}", tool_name);
@@ -128,7 +145,10 @@ fn print_current_state(tool_map: BTreeMap<String, BinaryHeap<ToolVersion>>, incl
 
                 lines.push(line);
             } else if include_missing {
-                lines.push(format!("{} - {} - Artifact not avaliable", version.name, version.version));
+                lines.push(format!(
+                    "{} - {} - Artifact not avaliable",
+                    version.name, version.version
+                ));
             }
         }
 

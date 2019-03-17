@@ -1,18 +1,19 @@
 pub mod github;
 pub mod link;
 
-use std::io::Read;
 use std::fs;
+use std::io::Read;
+use std::path::PathBuf;
 
 use flate2::read::GzDecoder;
 use tar::Archive;
 
-use crate::config::ConfigContainer;
-use crate::config::lock::*;
 use crate::common::error::*;
-use crate::config::model::*;
-use crate::err;
 use crate::common::progress::*;
+use crate::config::lock::*;
+use crate::config::model::*;
+use crate::config::ConfigContainer;
+use crate::err;
 
 pub fn download_tools(config: &ToolLock, versions: &Vec<ToolVersion>) -> Result<(), CliError> {
     let pb = ProgressBarHelper::new(versions.len() as u64, ProgressBarType::Downloading);
@@ -20,12 +21,12 @@ pub fn download_tools(config: &ToolLock, versions: &Vec<ToolVersion>) -> Result<
     for version in versions {
         debug!("Attempting to download {:?}", version);
         pb.inc(&version.name);
-         match download_tool(&version, &config.get_tokens()) {
-            Ok(true) => {},
+        match download_tool(&version, &config.get_tokens()) {
+            Ok(true) => {}
             Ok(false) => {
                 warn!("Unable to download {}", version.name);
-            },
-            Err(e) => return Err(e)
+            }
+            Err(e) => return Err(e),
         }
     }
 
@@ -39,7 +40,7 @@ pub fn download_tool(tool: &ToolVersion, tokens: &Tokens) -> Result<bool, CliErr
     }
 
     debug!("Downloading tool: {:?}", tool);
-    
+
     let url = match &tool.download_url {
         Some(url) => url.to_string(),
         None => {
@@ -66,7 +67,7 @@ pub fn download_tool(tool: &ToolVersion, tokens: &Tokens) -> Result<bool, CliErr
 
     match req.send() {
         Err(e) => err!(ApiError::UnableToDownloadArtifact(e.to_string())),
-        Ok(mut response) => { 
+        Ok(mut response) => {
             if response.status().is_success() {
                 let mut file = fs::File::create(part_path.clone())?;
                 if let Err(e) = response.copy_to(&mut file) {
@@ -75,16 +76,19 @@ pub fn download_tool(tool: &ToolVersion, tokens: &Tokens) -> Result<bool, CliErr
             } else {
                 match response.text() {
                     Ok(text) => err!(ApiError::CallWasNotSuccessful(text)),
-                    Err(e) => err!(ApiError::CallWasNotSuccessful(e.to_string()))
+                    Err(e) => err!(ApiError::CallWasNotSuccessful(e.to_string())),
                 }
             }
-        },
+        }
     }
 
     download_dir.pop();
     download_dir.push(&tool.version);
 
-    debug!("Downloading {} into {:#?} using {:#?}", tool.name, download_dir, part_path);
+    debug!(
+        "Downloading {} into {:#?} using {:#?}",
+        tool.name, download_dir, part_path
+    );
 
     fs::create_dir_all(&download_dir)?;
 
@@ -93,11 +97,11 @@ pub fn download_tool(tool: &ToolVersion, tokens: &Tokens) -> Result<bool, CliErr
             if let Err(e) = fs::rename(part_path, download_dir.join(&tool.exec_path)) {
                 err!(IOError::UnableToMoveArtifact(e.to_string()))
             }
-        },
+        }
         ArtifactType::Tgz => {
             let file = match fs::File::open(&part_path) {
                 Ok(file) => file,
-                Err(e) => err!(IOError::UnableToReadFile(part_path, e.to_string()))
+                Err(e) => err!(IOError::UnableToReadFile(part_path, e.to_string())),
             };
 
             let mut gz: Vec<u8> = Vec::new();
@@ -113,11 +117,11 @@ pub fn download_tool(tool: &ToolVersion, tokens: &Tokens) -> Result<bool, CliErr
             }
 
             let _ = fs::remove_file(&part_path);
-        },
+        }
         ArtifactType::Zip => {
             let file = match fs::File::open(&part_path) {
                 Ok(file) => file,
-                Err(e) => err!(IOError::UnableToReadFile(part_path, e.to_string()))
+                Err(e) => err!(IOError::UnableToReadFile(part_path, e.to_string())),
             };
 
             let mut archive = zip::ZipArchive::new(file).unwrap();
@@ -141,12 +145,26 @@ pub fn download_tool(tool: &ToolVersion, tokens: &Tokens) -> Result<bool, CliErr
         }
     }
 
+    set_executable(&tool.exec_path());
+
     Ok(true)
 }
 
+#[cfg(target_family = "unix")]
+fn set_executable(path: &PathBuf) {
+    use std::os::unix::fs::PermissionsExt;
+
+    let mut perms = fs::metadata(path).unwrap().permissions();
+    perms.set_mode(0o774);
+    fs::set_permissions(path, perms).unwrap();
+}
+
+#[cfg(target_family = "windows")]
+fn set_executable(_path: &PathBuf) {}
+
 pub fn pull_for_latest() -> Result<(), CliError> {
     let mut lock = ToolLock::get_global_lock().clone();
-    
+
     let global_config_tools = lock.get_definations();
     let pb = ProgressBarHelper::new(global_config_tools.len() as u64, ProgressBarType::Updating);
 
@@ -166,7 +184,7 @@ pub fn pull_for_latest() -> Result<(), CliError> {
     }
 
     pb.done();
-    
+
     ConfigContainer::set_lock_config(lock.clone());
     ConfigContainer::write_config()?;
 

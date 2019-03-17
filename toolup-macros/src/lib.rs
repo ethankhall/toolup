@@ -17,7 +17,6 @@ pub fn generate_error_code(input: TokenStream) -> TokenStream {
     impl_generate_error_code(&ast)
 }
 
-
 fn impl_generate_error_code(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let meta = extract_meta(&ast.attrs);
@@ -36,15 +35,15 @@ fn impl_generate_error_code(ast: &syn::DeriveInput) -> TokenStream {
         let ident = &variant.ident;
 
         let params = match variant.fields {
-            Unit => quote!{},
-            Unnamed(..) => quote!{ (..) },
-            Named(..) => quote!{ {..} },
+            Unit => quote! {},
+            Unnamed(..) => quote! { (..) },
+            Named(..) => quote! { {..} },
         };
 
-        arms.push(quote!{ #name::#ident #params => format!("{}-{:03}", #prefix, #idx + 1)});
+        arms.push(quote! { #name::#ident #params => format!("{}-{:03}", #prefix, #idx + 1)});
     }
 
-    let tokens = quote! { 
+    let tokens = quote! {
         impl ErrorCode for #name {
             fn get_error_code(&self) -> String {
                 match self {
@@ -53,6 +52,6 @@ fn impl_generate_error_code(ast: &syn::DeriveInput) -> TokenStream {
             }
         }
     };
-    
+
     tokens.into()
 }

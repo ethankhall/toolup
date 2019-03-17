@@ -1,12 +1,12 @@
 use indicatif::{ProgressBar, ProgressStyle};
 
 pub struct ProgressBarHelper {
-    pb: Option<ProgressBar>
+    pb: Option<ProgressBar>,
 }
 
 pub enum ProgressBarType {
     Downloading,
-    Updating
+    Updating,
 }
 
 impl ProgressBarHelper {
@@ -15,8 +15,12 @@ impl ProgressBarHelper {
             ProgressBarHelper { pb: None }
         } else {
             let template = match p_type {
-                ProgressBarType::Downloading => "{prefix:.bold.dim} {spinner} [{pos}/{len}] Downloading {wide_msg}",
-                ProgressBarType::Updating => "{prefix:.bold.dim} {spinner} [{pos}/{len}] Updating {wide_msg}"
+                ProgressBarType::Downloading => {
+                    "{prefix:.bold.dim} {spinner} [{pos}/{len}] Downloading {wide_msg}"
+                }
+                ProgressBarType::Updating => {
+                    "{prefix:.bold.dim} {spinner} [{pos}/{len}] Updating {wide_msg}"
+                }
             };
 
             let pb = ProgressBar::new(len);
@@ -28,7 +32,7 @@ impl ProgressBarHelper {
             ProgressBarHelper { pb: Some(pb) }
         }
     }
-    
+
     pub fn inc(&self, message: &str) {
         if let Some(pb) = &self.pb {
             pb.inc(1);

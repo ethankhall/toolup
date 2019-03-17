@@ -8,24 +8,18 @@ pub struct UserConfig {
     pub tokens: Tokens,
 
     #[serde(alias = "tool")]
-    tools: BTreeMap<String, ApplicationConfig>
-}
-
-impl UserConfig {
-    pub fn tools<'a> (&'a self) -> &'a BTreeMap<String, ApplicationConfig> {
-        return &self.tools
-    }
+    tools: BTreeMap<String, ApplicationConfig>,
 }
 
 #[serde(rename_all = "kebab-case")]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Tokens {
-    pub github: Option<String>
+    pub github: Option<String>,
 }
 
 impl Default for Tokens {
     fn default() -> Self {
-        Tokens { github: None}
+        Tokens { github: None }
     }
 }
 
@@ -34,7 +28,7 @@ impl Default for Tokens {
 pub struct ApplicationConfig {
     pub version_source: VersionSource,
     pub update_frequency: UpdateFrequency,
-    pub artifact: ArtifactSource
+    pub artifact: ArtifactSource,
 }
 
 impl ApplicationConfig {
@@ -50,7 +44,7 @@ impl ApplicationConfig {
         ApplicationConfig {
             version_source: self.version_source.clone(),
             update_frequency: self.update_frequency.clone(),
-            artifact: self.artifact.clone()
+            artifact: self.artifact.clone(),
         }
     }
 }
@@ -59,7 +53,7 @@ impl ApplicationConfig {
 #[serde(tag = "type")]
 pub enum VersionSource {
     #[serde(alias = "github")]
-    GitHub { owner: String, repo: String }
+    GitHub { owner: String, repo: String },
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -78,8 +72,9 @@ impl ArtifactSource {
         match self {
             ArtifactSource::Zip { name, path: _ } => name,
             ArtifactSource::TGZ { name, path: _ } => name,
-            ArtifactSource::Raw { name } => name
-        }.to_string()
+            ArtifactSource::Raw { name } => name,
+        }
+        .to_string()
     }
 }
 
@@ -92,5 +87,5 @@ pub enum UpdateFrequency {
     #[serde(alias = "slow")]
     Slow,
     #[serde(alias = "every-time", alias = "every")]
-    EveryTime
+    EveryTime,
 }

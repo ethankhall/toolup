@@ -1,11 +1,14 @@
-use std::path::PathBuf;
 use std::fmt;
+use std::path::PathBuf;
 
 #[macro_export]
 macro_rules! err {
     ($x:expr) => {
-        return Err(CliError::from((crate::common::error::ErrorCallSite::new(line!(), file!()), $x)));
-    }
+        return Err(CliError::from((
+            crate::common::error::ErrorCallSite::new(line!(), file!()),
+            $x,
+        )));
+    };
 }
 
 macro_rules! from {
@@ -15,18 +18,21 @@ macro_rules! from {
                 $e_type(sub.0, sub.1)
             }
         }
-    }
+    };
 }
 
 #[derive(Debug)]
 pub struct ErrorCallSite {
     line: u32,
-    file: String
+    file: String,
 }
 
 impl ErrorCallSite {
     pub fn new(line: u32, file: &str) -> Self {
-        ErrorCallSite { line, file: s!(file) }
+        ErrorCallSite {
+            line,
+            file: s!(file),
+        }
     }
 }
 
@@ -41,7 +47,7 @@ pub enum CliError {
     Unknown(ErrorCallSite, ()),
     IO(ErrorCallSite, IOError),
     Config(ErrorCallSite, ConfigError),
-    API(ErrorCallSite, ApiError)
+    API(ErrorCallSite, ApiError),
 }
 
 macro_rules! write_with_line {
@@ -51,7 +57,7 @@ macro_rules! write_with_line {
         } else {
             write!($f, "[{}] {:?}", $e.get_error_code(), $e)
         }
-    }
+    };
 }
 
 impl fmt::Display for CliError {
@@ -60,7 +66,7 @@ impl fmt::Display for CliError {
             CliError::Unknown(site, _) => write!(f, "[{}] Unknown Error... Sorry!", site),
             CliError::IO(site, e) => write_with_line!(f, site, e),
             CliError::Config(site, e) => write_with_line!(f, site, e),
-            CliError::API(site, e) => write_with_line!(f, site, e)
+            CliError::API(site, e) => write_with_line!(f, site, e),
         }
     }
 }
@@ -71,11 +77,10 @@ impl std::convert::Into<i32> for CliError {
             CliError::Unknown(_, _) => 9,
             CliError::IO(_, _) => 10,
             CliError::Config(_, _) => 11,
-            CliError::API(_, _) => 12
+            CliError::API(_, _) => 12,
         }
     }
 }
-
 
 from!(CliError::IO, IOError);
 from!(CliError::Config, ConfigError);
@@ -92,7 +97,7 @@ pub enum IOError {
     UnableToReadFile(PathBuf, String),
     GernalIOError(String),
     UnableToMoveArtifact(String),
-    UnableToExtractFile(String)
+    UnableToExtractFile(String),
 }
 
 #[derive(Debug, ErrorCode)]
@@ -103,7 +108,7 @@ pub enum ConfigError {
     ToolNotFound(String),
     GitHubRepoNotValid(String),
     UnableToWriteConfig(String),
-    ToolCanNotBeDownloaded(String)
+    ToolCanNotBeDownloaded(String),
 }
 
 #[derive(Debug, ErrorCode)]
@@ -112,12 +117,15 @@ pub enum ApiError {
     UnableToContactGitHub(String),
     CallWasNotSuccessful(String),
     GitHubTokenNotProvided,
-    UnableToDownloadArtifact(String)
+    UnableToDownloadArtifact(String),
 }
 
 impl From<std::io::Error> for CliError {
     fn from(e: std::io::Error) -> Self {
-        CliError::IO(ErrorCallSite::new(0, "unknown"), IOError::GernalIOError(e.to_string()))
+        CliError::IO(
+            ErrorCallSite::new(0, "unknown"),
+            IOError::GernalIOError(e.to_string()),
+        )
     }
 }
 

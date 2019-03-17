@@ -1,13 +1,13 @@
-use std::path::Path;
-use std::fs;
-use std::ffi::OsString;
 use std::collections::HashSet;
+use std::ffi::OsString;
+use std::fs;
+use std::path::Path;
 
 use crate::common::error::*;
 use crate::config::lock::*;
 
 pub fn update_links(versions: &Vec<ToolVersion>) -> Result<(), CliError> {
-    let path_dir = Path::new(crate::CACHE_DIR.as_str());
+    let path_dir = Path::new(crate::LATEST_INSTALL_DIR.as_str());
     let mut existing_tools: HashSet<OsString> = HashSet::new();
 
     fs::create_dir_all(&path_dir)?;
@@ -40,7 +40,11 @@ pub fn update_links(versions: &Vec<ToolVersion>) -> Result<(), CliError> {
         }
 
         if let Err(e) = link(exec_path, latest_path) {
-            eprintln!("Unable to update {:?}, {}", version.exec_path(), e.to_string());
+            eprintln!(
+                "Unable to update {:?}, {}",
+                version.exec_path(),
+                e.to_string()
+            );
         }
     }
 
@@ -49,7 +53,7 @@ pub fn update_links(versions: &Vec<ToolVersion>) -> Result<(), CliError> {
 
 #[cfg(target_family = "unix")]
 fn link<P: AsRef<Path>, Q: AsRef<Path>>(src: P, dest: Q) -> std::io::Result<()> {
-    std::os::unix::fs::symlink(exec_path, latest_path)
+    std::os::unix::fs::symlink(src, dest)
 }
 
 #[cfg(target_family = "windows")]

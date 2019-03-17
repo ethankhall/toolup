@@ -1,18 +1,13 @@
-use std::path::{Path, PathBuf};
-use std::cell::RefCell;
-use std::fs;
-use std::collections::{BTreeMap};
 use std::cmp::Ordering;
-use std::sync::RwLock;
+use std::collections::BTreeMap;
+use std::path::PathBuf;
 
-use chrono::{DateTime, Utc};
 use chrono::serde::ts_milliseconds;
+use chrono::{DateTime, Utc};
 
 use super::ConfigContainer;
-use crate::err;
-use crate::common::error::*;
-use crate::config::model::Tokens;
 use crate::config::model::ApplicationConfig;
+use crate::config::model::Tokens;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ToolLock {
@@ -25,13 +20,13 @@ pub struct ToolLock {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum WantedVersion {
     Latest,
-    Specific(String)
+    Specific(String),
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ToolDefinition {
     pub name: String,
-    pub config: ApplicationConfig
+    pub config: ApplicationConfig,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
@@ -43,20 +38,20 @@ pub struct ToolVersion {
     pub download_url: Option<String>,
     pub exec_path: String,
     pub art_type: ArtifactType,
-    pub auth_token_source: AuthTokenSource
+    pub auth_token_source: AuthTokenSource,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum AuthTokenSource {
     None,
-    GitHub
+    GitHub,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Copy, Eq, PartialEq)]
 pub enum ArtifactType {
     Tgz,
     Raw,
-    Zip
+    Zip,
 }
 
 impl ToolLock {
@@ -66,9 +61,12 @@ impl ToolLock {
 
     pub fn add_new(&mut self, tool_version: ToolVersion) {
         trace!("Adding new tool: {:?}", tool_version);
-        self.tools.retain(|x| !(x.name == tool_version.name && tool_version.version == x.version));
+        self.tools
+            .retain(|x| !(x.name == tool_version.name && tool_version.version == x.version));
 
-        self.wanted.entry(tool_version.name.clone()).or_insert(WantedVersion::Latest);
+        self.wanted
+            .entry(tool_version.name.clone())
+            .or_insert(WantedVersion::Latest);
         self.tools.push(tool_version);
     }
 
@@ -83,20 +81,31 @@ impl ToolLock {
     }
 
     pub fn find_tool(&self, tool_name: &str) -> Vec<ToolVersion> {
-        let result: Vec<ToolVersion> = self.tools.iter().filter(|x| x.name == tool_name).map(|x| x.clone()).collect();
+        let result: Vec<ToolVersion> = self
+            .tools
+            .iter()
+            .filter(|x| x.name == tool_name)
+            .map(|x| x.clone())
+            .collect();
         result
     }
 
     pub fn find_version(&self, tool_name: &str, version: &str) -> Option<ToolVersion> {
-        self.tools.iter().find(|x| x.name == tool_name && x.version == version).map(|x| x.clone())
+        self.tools
+            .iter()
+            .find(|x| x.name == tool_name && x.version == version)
+            .map(|x| x.clone())
     }
-    
+
     pub fn get_all_tools(&self) -> Vec<ToolVersion> {
         self.tools.clone()
     }
 
     pub fn insert_defination(&mut self, name: String, config: ApplicationConfig) {
-        self.definations.push(ToolDefinition { name: s!(name), config: config.clone() });
+        self.definations.push(ToolDefinition {
+            name: s!(name),
+            config: config.clone(),
+        });
     }
 
     pub fn get_definations(&self) -> Vec<ToolDefinition> {
@@ -112,13 +121,16 @@ impl ToolLock {
     }
 
     pub fn get_all_wanted(&self) -> Vec<ToolVersion> {
-        self.wanted.keys().flat_map(|name| self.get_wanted(&name)).collect()
+        self.wanted
+            .keys()
+            .flat_map(|name| self.get_wanted(&name))
+            .collect()
     }
 
     pub fn get_wanted(&self, tool_name: &str) -> Option<ToolVersion> {
         let wanted = match self.wanted.get(tool_name) {
             Some(value) => value,
-            None => &WantedVersion::Latest
+            None => &WantedVersion::Latest,
         };
 
         trace!("{} wants {:?}", tool_name, wanted);
@@ -129,10 +141,10 @@ impl ToolLock {
                 versions.sort_by_key(|x| x.created_at);
                 match versions.last() {
                     Some(x) => Some(x.clone()),
-                    None => None
+                    None => None,
                 }
             }
-            WantedVersion::Specific(version) => self.find_version(tool_name, &version)
+            WantedVersion::Specific(version) => self.find_version(tool_name, &version),
         }
     }
 }
@@ -150,8 +162,7 @@ impl std::default::Default for ToolLock {
 
 impl ToolVersion {
     pub fn get_download_dir(&self) -> PathBuf {
-        let mut path = PathBuf::from(crate::CACHE_DIR.as_str());
-        path.push("download");
+        let mut path = PathBuf::from(crate::DOWNLOAD_DIR.as_str());
         path.push(&self.name);
         path.push(&self.version);
 
