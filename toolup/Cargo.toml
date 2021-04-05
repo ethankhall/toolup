@@ -22,7 +22,7 @@ http = "0.1.15"
 flate2 = "1.0"
 tar = "0.4.20"
 zip = "0.5"
-rusqlite = { version = "0.16", features = ["bundled", "chrono"] }
+rusqlite = { version = "0.25", features = ["bundled", "chrono"] }
 lazy_static = "1.2"
 atty = "0.2"
 regex = "*"
