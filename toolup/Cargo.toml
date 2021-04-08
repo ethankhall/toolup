@@ -18,7 +18,7 @@ kopy-common-lib = { git = "https://github.com/ethankhall/rust-shared.git", rev =
 reqwest = { version = "0.9.9", features = ["rustls-tls"] }
 indicatif = "0.11.0"
 chrono = { version = "0.4", features = ["serde"] }
-http = "0.1.15"
+http = "0.2.4"
 flate2 = "1.0"
 tar = "0.4.20"
 zip = "0.5"
