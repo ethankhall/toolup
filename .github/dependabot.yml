@@ -1,0 +1,23 @@
+version: 2
+updates:
+- package-ecosystem: cargo
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "13:00"
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: reqwest
+    versions:
+    - 0.11.0
+    - 0.11.1
+    - 0.11.2
+  - dependency-name: http
+    versions:
+    - 0.2.3
+  - dependency-name: nix
+    versions:
+    - 0.19.0
+  - dependency-name: rusqlite
+    versions:
+    - 0.24.0
