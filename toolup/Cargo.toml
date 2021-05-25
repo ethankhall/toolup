@@ -16,7 +16,7 @@ directories = "1.0"
 toolup-macros = { path = "../toolup-macros"}
 kopy-common-lib = { git = "https://github.com/ethankhall/rust-shared.git", rev = "84a38d080b5a066c7443e6a46e043708d2a53f39" }
 reqwest = { version = "0.9.9", features = ["rustls-tls"] }
-indicatif = "0.11.0"
+indicatif = "0.16.2"
 chrono = { version = "0.4", features = ["serde"] }
 http = "0.1.15"
 flate2 = "1.0"
