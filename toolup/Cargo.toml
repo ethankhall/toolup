@@ -29,4 +29,4 @@ regex = "*"
 
 # [target.'cfg(target_family = "windows")'.dependencies]
 [target.'cfg(target_family = "unix")'.dependencies]
-nix = "0.13"
+nix = "0.22"
