@@ -1,9 +1,9 @@
-use sha2::{Sha256, Digest};
+use directories::ProjectDirs;
+use lazy_static::lazy_static;
+use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::{Path, PathBuf};
-use lazy_static::lazy_static;
-use directories::ProjectDirs;
-use tracing::{debug};
+use tracing::debug;
 
 lazy_static! {
     pub static ref LOG_DIR: String = {
@@ -29,7 +29,6 @@ lazy_static! {
         latest_dir.to_str().unwrap().to_owned()
     };
 }
-
 
 pub fn get_hash_for_contents(input: impl AsRef<[u8]>) -> String {
     let mut hasher = Sha256::new();

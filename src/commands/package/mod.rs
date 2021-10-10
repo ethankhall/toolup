@@ -2,15 +2,15 @@ mod create;
 mod init;
 mod install;
 
-use crate::PackageSubCommand;
 use crate::commands::SubCommandExec;
+use crate::PackageSubCommand;
 use thiserror::Error;
 
 pub mod prelude {
-    pub use super::create::{ArchivePackageError};
-    pub use super::init::{InitPackageError};
-    pub use super::install::{InstallPackageError};
+    pub use super::create::ArchivePackageError;
     pub use super::handle_package;
+    pub use super::init::InitPackageError;
+    pub use super::install::InstallPackageError;
     pub use super::PackageError;
 }
 

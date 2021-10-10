@@ -1,23 +1,23 @@
 use std::default::Default;
 
 use anyhow::Result as AnyResult;
-use clap::{Clap};
-use tracing::{error, debug, level_filters::LevelFilter};
-use tracing_subscriber::{filter::{filter_fn}, prelude::*};
+use clap::Clap;
+use tracing::{debug, error, level_filters::LevelFilter};
+use tracing_subscriber::{filter::filter_fn, prelude::*};
 use tracing_subscriber::{
     fmt::format::{Format, JsonFields, PrettyFields},
     layer::SubscriberExt,
     Registry,
 };
 
+mod cli;
 mod commands;
 mod model;
-mod util;
-mod cli;
 mod state;
+mod util;
 
-use commands::{handle_package};
 use cli::*;
+use commands::handle_package;
 
 impl LoggingOpts {
     pub fn to_level(&self) -> LevelFilter {
@@ -48,7 +48,7 @@ async fn main() -> AnyResult<()> {
 
     let result = match opt.sub_command {
         SubCommand::Package(args) => handle_package(args).await,
-        _ => unimplemented!()
+        _ => unimplemented!(),
     };
 
     if let Err(e) = result {
@@ -76,31 +76,28 @@ fn configure_logging(logging_opts: &LoggingOpts) -> tracing_appender::non_blocki
         .with_writer(non_blocking);
 
     let console_output = tracing_subscriber::fmt::layer()
-            .event_format(Format::default().pretty())
-            .fmt_fields(PrettyFields::new())
-            .with_target(false);
+        .event_format(Format::default().pretty())
+        .fmt_fields(PrettyFields::new())
+        .with_target(false);
 
     let override_console_output = tracing_subscriber::fmt::layer()
-            .event_format(Format::default().pretty())
-            .fmt_fields(PrettyFields::new())
-            .with_target(false);
-
+        .event_format(Format::default().pretty())
+        .fmt_fields(PrettyFields::new())
+        .with_target(false);
 
     let enable_stdout = logging_opts.console;
 
-    let subscriber = Registry::default()
-        .with(logging_opts.to_level())
-        .with(console_output.with_filter(filter_fn(move |metadata| {
-            !enable_stdout && metadata.target() == "user"
-        })));
+    let subscriber =
+        Registry::default()
+            .with(logging_opts.to_level())
+            .with(console_output.with_filter(filter_fn(move |metadata| {
+                !enable_stdout && metadata.target() == "user"
+            })));
 
     let enable_stdout = logging_opts.console;
     let subscriber = subscriber
-        .with(override_console_output.with_filter(filter_fn(move |_metadata| {
-            enable_stdout
-        })))
+        .with(override_console_output.with_filter(filter_fn(move |_metadata| enable_stdout)))
         .with(file_output);
-
 
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 

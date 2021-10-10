@@ -1,29 +1,24 @@
 use async_trait::async_trait;
-use thiserror::Error;
+use flate2::{write::GzEncoder, Compression};
+use path_absolutize::*;
+use std::collections::BTreeMap;
 use std::fs::{read_to_string, File};
 use std::io::prelude::*;
-use std::collections::BTreeMap;
-use walkdir::{WalkDir};
 use std::path::*;
-use path_absolutize::*;
-use flate2::{Compression, write::GzEncoder};
-use tracing::{info, debug, instrument};
+use thiserror::Error;
+use tracing::{debug, info, instrument};
+use walkdir::WalkDir;
 
 use crate::cli::*;
-use crate::model::{GENERATED_FILE_NAME, UserDefinedPackage, GeneratedDefinedPackage};
 use crate::commands::SubCommandExec;
+use crate::model::{GeneratedDefinedPackage, UserDefinedPackage, GENERATED_FILE_NAME};
 
 #[derive(Error, Debug)]
 pub enum ArchivePackageError {
     #[error("Unable to find `{target}`.")]
-    TargetDoesNotExist {
-        target: String
-    },
+    TargetDoesNotExist { target: String },
     #[error("Unable to process {dir} due to {err}.")]
-    UnableToWalkDir {
-        dir: String,
-        err: walkdir::Error
-    },
+    UnableToWalkDir { dir: String, err: walkdir::Error },
     #[error(transparent)]
     TomlDeError(#[from] toml::de::Error),
     #[error(transparent)]
@@ -43,7 +38,9 @@ impl SubCommandExec<ArchivePackageError> for ArchiveToolSubCommand {
 
         let target_dir = Path::new(&self.target_dir);
         if !target_dir.exists() {
-            return Err(ArchivePackageError::TargetDoesNotExist { target: self.target_dir });
+            return Err(ArchivePackageError::TargetDoesNotExist {
+                target: self.target_dir,
+            });
         }
 
         let target_dir = std::fs::canonicalize(target_dir)?;
@@ -59,7 +56,10 @@ impl SubCommandExec<ArchivePackageError> for ArchiveToolSubCommand {
             let entry = match entry {
                 Ok(entry) => entry,
                 Err(e) => {
-                    return Err(ArchivePackageError::UnableToWalkDir { dir: target_dir_absolute_path, err: e});
+                    return Err(ArchivePackageError::UnableToWalkDir {
+                        dir: target_dir_absolute_path,
+                        err: e,
+                    });
                 }
             };
 
@@ -67,8 +67,14 @@ impl SubCommandExec<ArchivePackageError> for ArchiveToolSubCommand {
                 continue;
             }
 
-            let archive_path = entry.path().strip_prefix(&target_dir).expect("Base path to be well known");
-            files_to_package.insert(archive_path.display().to_string(), entry.path().display().to_string());
+            let archive_path = entry
+                .path()
+                .strip_prefix(&target_dir)
+                .expect("Base path to be well known");
+            files_to_package.insert(
+                archive_path.display().to_string(),
+                entry.path().display().to_string(),
+            );
         }
 
         debug!("Files to include in archive are: {:?}", files_to_package);
@@ -84,25 +90,43 @@ impl SubCommandExec<ArchivePackageError> for ArchiveToolSubCommand {
     }
 }
 
-fn validate_entrypoint(entrypoint: &str, archive_root: &Path) -> Result<String, ArchivePackageError> {
+fn validate_entrypoint(
+    entrypoint: &str,
+    archive_root: &Path,
+) -> Result<String, ArchivePackageError> {
     let entrypoint_path = Path::join(&archive_root, entrypoint);
     if !entrypoint_path.exists() {
-        return Err(ArchivePackageError::TargetDoesNotExist { target: entrypoint_path.display().to_string() });
+        return Err(ArchivePackageError::TargetDoesNotExist {
+            target: entrypoint_path.display().to_string(),
+        });
     }
     let entrypoint_path = entrypoint_path.absolutize().unwrap();
-    let entrypoint_path = entrypoint_path.strip_prefix(&archive_root).expect("Base path to be well known").display().to_string();
+    let entrypoint_path = entrypoint_path
+        .strip_prefix(&archive_root)
+        .expect("Base path to be well known")
+        .display()
+        .to_string();
 
     Ok(entrypoint_path)
 }
 
 #[instrument(skip(entrypoint_paths, package, artifacts))]
-async fn create_archive(entrypoint_paths: Vec<String>, package: &UserDefinedPackage<'_>, artifacts: BTreeMap<String, String>) -> Result<Vec<u8>, ArchivePackageError> {
-    use tar::{Builder, Header};
+async fn create_archive(
+    entrypoint_paths: Vec<String>,
+    package: &UserDefinedPackage<'_>,
+    artifacts: BTreeMap<String, String>,
+) -> Result<Vec<u8>, ArchivePackageError> {
     use std::convert::TryInto;
+    use tar::{Builder, Header};
 
     let mut entrypoint_map = BTreeMap::new();
     for entrypoint in entrypoint_paths {
-        let command_name = Path::new(&entrypoint).file_name().expect("The state file to have a valid filename").to_os_string().into_string().expect("State file to have a valid filename.");
+        let command_name = Path::new(&entrypoint)
+            .file_name()
+            .expect("The state file to have a valid filename")
+            .to_os_string()
+            .into_string()
+            .expect("State file to have a valid filename.");
         entrypoint_map.insert(command_name, entrypoint);
     }
 
@@ -111,8 +135,8 @@ async fn create_archive(entrypoint_paths: Vec<String>, package: &UserDefinedPack
         name: package.name.to_string(),
         entrypoints: entrypoint_map,
         version: package.version.to_string(),
-        file_hashes: Default::default(), 
-        achived_at: chrono::Utc::now()
+        file_hashes: Default::default(),
+        achived_at: chrono::Utc::now(),
     };
 
     for (archive_name, file_path) in artifacts.into_iter() {
