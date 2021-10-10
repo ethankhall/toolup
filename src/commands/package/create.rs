@@ -1,4 +1,3 @@
-use clap::Clap;
 use async_trait::async_trait;
 use thiserror::Error;
 use std::fs::{read_to_string, File};
@@ -10,6 +9,7 @@ use path_absolutize::*;
 use flate2::{Compression, write::GzEncoder};
 use tracing::{info, debug, instrument};
 
+use crate::cli::*;
 use crate::model::{GENERATED_FILE_NAME, UserDefinedPackage, GeneratedDefinedPackage};
 use crate::commands::SubCommandExec;
 
@@ -32,24 +32,6 @@ pub enum ArchivePackageError {
     IoError(#[from] std::io::Error),
     #[error(transparent)]
     UknownError(#[from] anyhow::Error),
-}
-
-#[derive(Clap, Debug)]
-pub struct ArchiveToolSubCommand {
-    /// Location on disk that has the artifact directory ready.
-    /// 
-    /// All files relative to this directory will be packaged up for distribution.
-    /// There is a limit of 128 MiB total uncompressed files.
-    #[clap(short, long)]
-    target_dir: String,
-
-    /// The config file that describes the tool that is being packaged.
-    #[clap(long = "config")]
-    application_config: String,
-
-    /// Location to write the package to.
-    #[clap(long)]
-    archive_path: String,
 }
 
 #[async_trait]
@@ -118,10 +100,16 @@ async fn create_archive(entrypoint_paths: Vec<String>, package: &UserDefinedPack
     use tar::{Builder, Header};
     use std::convert::TryInto;
 
+    let mut entrypoint_map = BTreeMap::new();
+    for entrypoint in entrypoint_paths {
+        let command_name = Path::new(&entrypoint).file_name().expect("The state file to have a valid filename").to_os_string().into_string().expect("State file to have a valid filename.");
+        entrypoint_map.insert(command_name, entrypoint);
+    }
+
     let mut archive = Builder::new(Vec::new());
     let mut definition = GeneratedDefinedPackage {
         name: package.name.to_string(),
-        entrypoints: entrypoint_paths,
+        entrypoints: entrypoint_map,
         version: package.version.to_string(),
         file_hashes: Default::default(), 
         achived_at: chrono::Utc::now()

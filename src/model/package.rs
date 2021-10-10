@@ -12,8 +12,14 @@ pub struct UserDefinedPackage<'a> {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GeneratedDefinedPackage {
     pub name: String,
-    pub entrypoints: Vec<String>,
+    pub entrypoints: BTreeMap<String, String>,
     pub version: String,
     pub achived_at: DateTime<Utc>,
     pub file_hashes: BTreeMap<String, String>,
+}
+
+#[derive(Debug)]
+pub struct InstalledPackageContainer {
+    pub package: GeneratedDefinedPackage,
+    pub path_to_root: String,
 }

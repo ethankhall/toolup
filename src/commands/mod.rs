@@ -1,8 +1,6 @@
 use thiserror::Error;
 use async_trait::async_trait;
 
-use crate::PackageSubCommand;
-
 mod package;
 
 pub use package::prelude::*;

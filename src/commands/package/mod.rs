@@ -7,9 +7,9 @@ use crate::commands::SubCommandExec;
 use thiserror::Error;
 
 pub mod prelude {
-    pub use super::create::{ArchivePackageError,ArchiveToolSubCommand};
-    pub use super::init::{InitPackageError, InitToolSubCommand};
-    pub use super::install::{InstallToolSubCommand, InstallPackageError};
+    pub use super::create::{ArchivePackageError};
+    pub use super::init::{InitPackageError};
+    pub use super::install::{InstallPackageError};
     pub use super::handle_package;
     pub use super::PackageError;
 }

@@ -1,4 +1,3 @@
-use clap::Clap;
 use async_trait::async_trait;
 use thiserror::Error;
 use std::fs::{File, self};
@@ -11,6 +10,7 @@ use tracing::{info, debug, instrument};
 use crate::model::{GENERATED_FILE_NAME, GeneratedDefinedPackage};
 use crate::commands::SubCommandExec;
 use crate::util::{set_executable, get_hash_for_contents};
+use crate::cli::*;
 
 #[derive(Error, Debug)]
 pub enum InstallPackageError {
@@ -32,30 +32,6 @@ pub enum InstallPackageError {
     IoError(#[from] std::io::Error),
     #[error(transparent)]
     UknownError(#[from] anyhow::Error),
-}
-
-#[derive(Clap, Debug)]
-pub struct InstallToolSubCommand {
-    /// Location on disk has the pre-built package.
-    /// 
-    /// This package will be extracted, and placed inside your user directory.
-    /// When a package is isntalled locally, it will no longer support refreshs
-    /// from an upstream source.
-    #[clap(short, long)]
-    archive_path: String,
-
-    /// If the package already exists, overwrite it.
-    /// 
-    /// When set, toolup will clearn out the destination directory if it exists.
-    #[clap(short, long)]
-    overwrite: bool,
-
-    /// Override the location to install the package.
-    /// 
-    /// This option will allow you to install the package in a custom directory,
-    /// instead of the default one managed by toolup.
-    #[clap(short, long)]
-    tool_root_dir: Option<String>,
 }
 
 #[async_trait]
@@ -105,8 +81,8 @@ async fn extract_and_validate(package_file: &Path, temp_dir: &Path) -> Result<Ge
         valdiate_file(temp_dir.join(filename), &hash).await?;
     }
 
-    for entrypoint in &archive_def.entrypoints {
-        set_executable(&temp_dir.join(entrypoint));
+    for (_entrypoint, rel_path) in &archive_def.entrypoints {
+        set_executable(&temp_dir.join(rel_path));
     }
 
     Ok(archive_def)

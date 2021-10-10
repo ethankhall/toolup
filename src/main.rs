@@ -1,7 +1,7 @@
 use std::default::Default;
 
 use anyhow::Result as AnyResult;
-use clap::{ArgGroup, AppSettings, Clap};
+use clap::{Clap};
 use tracing::{error, debug, level_filters::LevelFilter};
 use tracing_subscriber::{filter::{filter_fn}, prelude::*};
 use tracing_subscriber::{
@@ -13,78 +13,11 @@ use tracing_subscriber::{
 mod commands;
 mod model;
 mod util;
+mod cli;
+mod state;
 
-use commands::{InitToolSubCommand, ArchiveToolSubCommand, InstallToolSubCommand, handle_package};
-
-#[derive(Clap, Debug)]
-#[clap(author, version)]
-#[clap(setting = AppSettings::ColoredHelp)]
-pub struct Opts {
-    #[clap(flatten)]
-    pub logging_opts: LoggingOpts,
-
-    #[clap(subcommand)]
-    pub sub_command: SubCommand,
-}
-
-#[derive(Clap, Debug)]
-pub enum SubCommand {
-    
-    /// Manage toolup managed commands
-    #[clap(subcommand)]
-    Manage(MangeSubCommand),
-
-    /// Manage packages locally.
-    #[clap(subcommand)]
-    Package(PackageSubCommand)
-}
-
-#[derive(Clap, Debug)]
-#[clap(setting = AppSettings::ColoredHelp)]
-pub enum PackageSubCommand {
-    /// Create an empty config file intended to be updated by user.
-    Init(InitToolSubCommand),
-    /// Archive a package based on configuration file.
-    Archive(ArchiveToolSubCommand),
-    /// Install a local package archive
-    Install(InstallToolSubCommand),
-}
-
-#[derive(Clap, Debug)]
-#[clap(setting = AppSettings::ColoredHelp)]
-pub enum MangeSubCommand {
-    /// Add a remote tool configuration
-    Add(ToolAddArgs),
-    /// Delete a remote tool configuration
-    Delete(ToolAddArgs),
-    /// Fetch a remote tool
-    Fetch(ToolAddArgs),
-}
-
-#[derive(Clap, Debug)]
-pub struct ToolAddArgs {
-    
-}
-
-#[derive(Clap, Debug)]
-#[clap(group = ArgGroup::new("logging"))]
-pub struct LoggingOpts {
-    /// A level of verbosity, and can be used multiple times
-    #[clap(short, long, parse(from_occurrences), global(true), group = "logging")]
-    pub debug: u64,
-
-    /// Enable warn logging
-    #[clap(short, long, global(true), group = "logging")]
-    pub warn: bool,
-
-    /// Disable everything but error logging
-    #[clap(short, long, global(true), group = "logging")]
-    pub error: bool,
-
-    /// When set, logs will be written to stdout in addtion to the file.
-    #[clap(short, long, global(true))]
-    pub console: bool,
-}
+use commands::{handle_package};
+use cli::*;
 
 impl LoggingOpts {
     pub fn to_level(&self) -> LevelFilter {
@@ -134,8 +67,6 @@ async fn main() -> AnyResult<()> {
 }
 
 fn configure_logging(logging_opts: &LoggingOpts) -> tracing_appender::non_blocking::WorkerGuard {
-    
-
     let file_appender = tracing_appender::rolling::hourly(util::LOG_DIR.to_string(), "toolup.log");
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
 

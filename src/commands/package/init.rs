@@ -1,4 +1,3 @@
-use clap::Clap;
 use async_trait::async_trait;
 use thiserror::Error;
 use std::fs::{File};
@@ -6,6 +5,7 @@ use std::io::Write;
 
 use crate::model::UserDefinedPackage;
 use crate::commands::SubCommandExec;
+use crate::cli::*;
 
 #[derive(Error, Debug)]
 pub enum InitPackageError {
@@ -15,12 +15,6 @@ pub enum InitPackageError {
     IoError(#[from] std::io::Error),
     #[error(transparent)]
     UknownError(#[from] anyhow::Error),
-}
-
-#[derive(Clap, Debug)]
-pub struct InitToolSubCommand {
-    #[clap(default_value("package.toml"))]
-    output_file: String
 }
 
 #[async_trait]
