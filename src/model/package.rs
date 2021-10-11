@@ -9,7 +9,7 @@ pub struct UserDefinedPackage<'a> {
     pub version: &'a str,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Clone, Deserialize)]
 pub struct GeneratedDefinedPackage {
     pub name: String,
     pub entrypoints: BTreeMap<String, String>,
@@ -18,7 +18,7 @@ pub struct GeneratedDefinedPackage {
     pub file_hashes: BTreeMap<String, String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct InstalledPackageContainer {
     pub package: GeneratedDefinedPackage,
     pub path_to_root: String,

@@ -6,6 +6,7 @@ use thiserror::Error;
 use crate::cli::*;
 use crate::commands::SubCommandExec;
 use crate::model::UserDefinedPackage;
+use crate::util::GlobalFolders;
 
 #[derive(Error, Debug)]
 pub enum InitPackageError {
@@ -19,7 +20,7 @@ pub enum InitPackageError {
 
 #[async_trait]
 impl SubCommandExec<InitPackageError> for InitToolSubCommand {
-    async fn execute(self) -> Result<(), InitPackageError> {
+    async fn execute(self, _global_folder: &GlobalFolders) -> Result<(), InitPackageError> {
         let udp = UserDefinedPackage {
             name: "clu",
             entrypoints: vec!["clu"],

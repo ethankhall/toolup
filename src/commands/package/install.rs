@@ -9,8 +9,9 @@ use tracing::{debug, info, instrument};
 
 use crate::cli::*;
 use crate::commands::SubCommandExec;
-use crate::model::{GeneratedDefinedPackage, GENERATED_FILE_NAME};
-use crate::util::{get_hash_for_contents, set_executable};
+use crate::model::{GeneratedDefinedPackage, InstalledPackageContainer, GENERATED_FILE_NAME};
+use crate::state::{get_current_state, write_state};
+use crate::util::{get_hash_for_contents, set_executable, GlobalFolders};
 
 #[derive(Error, Debug)]
 pub enum InstallPackageError {
@@ -25,6 +26,8 @@ pub enum InstallPackageError {
         computed: String,
     },
     #[error(transparent)]
+    StateError(#[from] crate::state::StateError),
+    #[error(transparent)]
     JsonError(#[from] serde_json::Error),
     #[error(transparent)]
     IoError(#[from] std::io::Error),
@@ -34,24 +37,37 @@ pub enum InstallPackageError {
 
 #[async_trait]
 impl SubCommandExec<InstallPackageError> for InstallToolSubCommand {
-    async fn execute(self) -> Result<(), InstallPackageError> {
-        let tool_root_dir = match self.tool_root_dir {
-            Some(path) => path,
-            None => crate::util::LATEST_INSTALL_DIR.to_string(),
-        };
+    async fn execute(self, global_folder: &GlobalFolders) -> Result<(), InstallPackageError> {
+        let tool_root_dir = global_folder.tool_root_dir.clone();
 
         let tool_root_dir = Path::new(&tool_root_dir);
         let archive_path = Path::new(&self.archive_path);
         let tmp_extract_dir = tool_root_dir.join(format!("tmp.{}", chrono::Utc::now().timestamp()));
         let package_def = extract_and_validate(archive_path, &tmp_extract_dir).await?;
 
-        move_package_to_correct_location(
+        let real_path = move_package_to_correct_location(
             &tmp_extract_dir,
             tool_root_dir,
-            package_def,
+            &package_def,
             self.overwrite,
         )
         .await?;
+
+        let global_state = global_folder.global_state_file();
+        let mut container = get_current_state(&global_state).await?;
+        let install_container = InstalledPackageContainer {
+            package: package_def,
+            path_to_root: real_path,
+        };
+        container
+            .current_state
+            .add_installed_package(&install_container);
+        container
+            .current_state
+            .make_package_current(&install_container)?;
+
+        write_state(&global_state, container).await?;
+
         Ok(())
     }
 }
@@ -112,14 +128,14 @@ async fn extract_and_validate(
 async fn move_package_to_correct_location(
     temp_dir: &Path,
     tool_root: &Path,
-    package: GeneratedDefinedPackage,
+    package: &GeneratedDefinedPackage,
     overwrite: bool,
-) -> Result<(), InstallPackageError> {
+) -> Result<String, InstallPackageError> {
     let unix_friendly_name = package.name.replace(' ', "_");
     let real_dest = tool_root
         .to_owned()
         .join(&unix_friendly_name)
-        .join(package.version);
+        .join(&package.version);
 
     if real_dest.exists() && overwrite {
         info!(target: "user", "Cleading up old install of {}", package.name);
@@ -129,9 +145,11 @@ async fn move_package_to_correct_location(
     info!(target: "user", "Installing {} at {}", package.name, real_dest.display().to_string());
 
     fs::create_dir_all(real_dest.parent().expect("Partent to exist"))?;
-    fs::rename(temp_dir, real_dest)?;
+    fs::rename(temp_dir, &real_dest)?;
 
-    Ok(())
+    let real_dest = std::fs::canonicalize(real_dest).expect("Path that was written to be valid");
+
+    Ok(real_dest.display().to_string())
 }
 
 #[instrument]

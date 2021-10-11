@@ -1,33 +1,92 @@
+use crate::cli::{GlobalConfig, LoggingOpts};
 use directories::ProjectDirs;
-use lazy_static::lazy_static;
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::{Path, PathBuf};
 use tracing::debug;
+use tracing::level_filters::LevelFilter;
 
-lazy_static! {
-    pub static ref LOG_DIR: String = {
+pub const GLOBAL_STATE_FILE_NAME: &str = "global-state.json";
+pub const TOOLUP_GLOBAL_CONFIG_DIR: &str = "TOOLUP_GLOBAL_CONFIG_DIR";
+pub const TOOLUP_ROOT_TOOL_DIR: &str = "TOOLUP_ROOT_TOOL_DIR";
+
+#[derive(Debug)]
+pub struct GlobalFolders {
+    pub log_dir: String,
+    pub config_dir: String,
+    pub tool_root_dir: String,
+}
+
+impl GlobalFolders {
+    pub fn global_state_file(&self) -> PathBuf {
+        Path::new(&self.config_dir).join(GLOBAL_STATE_FILE_NAME)
+    }
+
+    pub fn shim_from_env() -> Self {
         let project_dirs =
             ProjectDirs::from("io", "ehdev", "toolup").expect("To create project dirs");
-        project_dirs.data_dir().to_str().unwrap().to_owned()
-    };
-    pub static ref CONFIG_DIR: String = {
+        let log_dir = project_dirs.data_dir().display().to_string();
+
+        let tool_root_dir = match std::env::var(TOOLUP_ROOT_TOOL_DIR) {
+            Ok(config_dir) => config_dir.to_string(),
+            Err(_) => Path::join(project_dirs.cache_dir(), "download")
+                .display()
+                .to_string(),
+        };
+
+        let config_dir = match std::env::var(TOOLUP_GLOBAL_CONFIG_DIR) {
+            Ok(config_dir) => config_dir.to_string(),
+            Err(_) => project_dirs.config_dir().to_str().unwrap().to_owned(),
+        };
+
+        Self {
+            log_dir,
+            config_dir,
+            tool_root_dir,
+        }
+    }
+}
+
+impl From<&GlobalConfig> for GlobalFolders {
+    fn from(cli: &GlobalConfig) -> Self {
         let project_dirs =
             ProjectDirs::from("io", "ehdev", "toolup").expect("To create project dirs");
-        project_dirs.config_dir().to_str().unwrap().to_owned()
-    };
-    pub static ref DOWNLOAD_DIR: String = {
-        let project_dirs =
-            ProjectDirs::from("io", "ehdev", "toolup").expect("To create project dirs");
-        let download_dir = Path::join(project_dirs.cache_dir(), "download");
-        download_dir.to_str().unwrap().to_owned()
-    };
-    pub static ref LATEST_INSTALL_DIR: String = {
-        let project_dirs =
-            ProjectDirs::from("io", "ehdev", "toolup").expect("To create project dirs");
-        let latest_dir = Path::join(project_dirs.cache_dir(), "latest");
-        latest_dir.to_str().unwrap().to_owned()
-    };
+        let log_dir = project_dirs.data_dir().display().to_string();
+
+        let tool_root_dir = match &cli.tool_root_dir {
+            Some(config_dir) => config_dir.to_string(),
+            None => Path::join(project_dirs.cache_dir(), "download")
+                .display()
+                .to_string(),
+        };
+
+        let config_dir = match &cli.config_dir {
+            Some(config_dir) => config_dir.to_string(),
+            None => project_dirs.config_dir().to_str().unwrap().to_owned(),
+        };
+
+        Self {
+            log_dir,
+            config_dir,
+            tool_root_dir,
+        }
+    }
+}
+
+impl LoggingOpts {
+    pub fn to_level(&self) -> LevelFilter {
+        if self.error {
+            LevelFilter::ERROR
+        } else if self.warn {
+            LevelFilter::WARN
+        } else if self.debug == 0 {
+            LevelFilter::INFO
+        } else if self.debug == 1 {
+            LevelFilter::DEBUG
+        } else {
+            LevelFilter::TRACE
+        }
+    }
 }
 
 pub fn get_hash_for_contents(input: impl AsRef<[u8]>) -> String {
@@ -51,3 +110,25 @@ pub fn set_executable(path: &PathBuf) {
 
 #[cfg(target_family = "windows")]
 pub fn set_executable(_path: &PathBuf) {}
+
+#[cfg(target_family = "unix")]
+pub fn exec(path: String, args: Vec<String>) {
+    use std::ffi::CString;
+
+    let path = CString::new(path).unwrap();
+    let argv: Vec<CString> = args.into_iter().map(|x| CString::new(x).unwrap()).collect();
+    nix::unistd::execv(&path, argv.as_slice()).unwrap();
+}
+
+#[cfg(target_family = "windows")]
+pub fn exec(path: String, args: Vec<String>) {
+    use std::process::{self, Command};
+    let status = Command::new("cmd")
+        .arg("/C")
+        .arg(path)
+        .arg(args.join(" "))
+        .status()
+        .unwrap();
+
+    process::exit(status.code().unwrap_or(0));
+}

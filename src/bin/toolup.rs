@@ -2,7 +2,7 @@ use std::default::Default;
 
 use anyhow::Result as AnyResult;
 use clap::Clap;
-use tracing::{debug, error, level_filters::LevelFilter};
+use tracing::{debug, error};
 use tracing_subscriber::{filter::filter_fn, prelude::*};
 use tracing_subscriber::{
     fmt::format::{Format, JsonFields, PrettyFields},
@@ -10,30 +10,7 @@ use tracing_subscriber::{
     Registry,
 };
 
-mod cli;
-mod commands;
-mod model;
-mod state;
-mod util;
-
-use cli::*;
-use commands::handle_package;
-
-impl LoggingOpts {
-    pub fn to_level(&self) -> LevelFilter {
-        if self.error {
-            LevelFilter::ERROR
-        } else if self.warn {
-            LevelFilter::WARN
-        } else if self.debug == 0 {
-            LevelFilter::INFO
-        } else if self.debug == 1 {
-            LevelFilter::DEBUG
-        } else {
-            LevelFilter::TRACE
-        }
-    }
-}
+use toolup::prelude::*;
 
 #[tokio::main]
 async fn main() -> AnyResult<()> {
@@ -41,33 +18,39 @@ async fn main() -> AnyResult<()> {
     human_panic::setup_panic!();
 
     let opt = Opts::parse();
+    let global_folder = GlobalFolders::from(&opt.global_config);
 
-    let _gaurd = configure_logging(&opt.logging_opts);
+    let _gaurd = configure_logging(&opt.logging_opts, &global_folder);
 
     debug!("Starting Execution");
 
-    let result = match opt.sub_command {
-        SubCommand::Package(args) => handle_package(args).await,
-        _ => unimplemented!(),
-    };
+    let result = run_command(opt, &global_folder).await;
 
     if let Err(e) = result {
-        eprint!("Failed to execute command: {}", e);
+        error!(target: "user", "Failed to execute command: {}", e);
+        drop(_gaurd);
         std::process::exit(1);
     }
-
-    // match opt.sub_command {
-    //     SubCommand::Init => run_init().await,
-    //     SubCommand::RunMigration(args) => run_migration(args).await,
-    //     SubCommand::CheckStatus(args) => check_status(args).await,
-    //     SubCommand::RunFollowup(args) => run_followup(args).await,
-    // }
 
     Ok(())
 }
 
-fn configure_logging(logging_opts: &LoggingOpts) -> tracing_appender::non_blocking::WorkerGuard {
-    let file_appender = tracing_appender::rolling::hourly(util::LOG_DIR.to_string(), "toolup.log");
+async fn run_command(opts: Opts, global_folder: &GlobalFolders) -> Result<(), CommandError> {
+    let result = match opts.sub_command {
+        SubCommand::Package(args) => handle_package(args, &global_folder).await?,
+        SubCommand::Exec(args) => handle_exec(args, &global_folder).await?,
+        _ => unimplemented!(),
+    };
+
+    Ok(result)
+}
+
+fn configure_logging(
+    logging_opts: &LoggingOpts,
+    global_folder: &GlobalFolders,
+) -> tracing_appender::non_blocking::WorkerGuard {
+    let file_appender =
+        tracing_appender::rolling::hourly(global_folder.log_dir.clone(), "toolup.log");
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
 
     let file_output = tracing_subscriber::fmt::layer()
