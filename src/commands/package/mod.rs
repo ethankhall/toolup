@@ -5,6 +5,9 @@ mod install;
 use crate::cli::PackageSubCommand;
 use crate::commands::SubCommandExec;
 use crate::util::GlobalFolders;
+pub use create::ArchivePackageError;
+pub use init::InitPackageError;
+pub use install::InstallPackageError;
 use thiserror::Error;
 
 pub mod prelude {
@@ -14,8 +17,6 @@ pub mod prelude {
     pub use super::install::InstallPackageError;
     pub use super::PackageError;
 }
-
-use prelude::*;
 
 #[derive(Error, Debug)]
 pub enum PackageError {

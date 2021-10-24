@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use fs2::FileExt;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::fs::{self, File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
@@ -179,6 +180,12 @@ async fn with_write_lock(
     get_current_state(state_path).await
 }
 
+pub struct PackageDescription {
+    pub name: String,
+    pub version: String,
+    pub binaries: BTreeMap<String, bool>,
+}
+
 mod v1 {
     use super::StateError;
     use crate::model::InstalledPackageContainer;
@@ -197,6 +204,7 @@ mod v1 {
         pub version: String,
         #[derivative(PartialEq = "ignore")]
         pub package_dir: String,
+        pub remote_name: Option<String>,
     }
 
     impl Hash for InstalledPackage {
@@ -212,6 +220,7 @@ mod v1 {
                 name: container.package.name.clone(),
                 version: container.package.version.clone(),
                 package_dir: container.path_to_root.clone(),
+                remote_name: container.remote_name.clone(),
             }
         }
     }
@@ -244,6 +253,61 @@ mod v1 {
     }
 
     impl InstalledState {
+        pub fn describe_package(&self, package: &InstalledPackage) -> super::PackageDescription {
+            let mut binaries_installed = BTreeMap::new();
+            for binary in &self.installed_binaries {
+                if &binary.package == package {
+                    binaries_installed.insert(binary.name.clone(), false);
+                }
+            }
+
+            for (name, binary) in &self.current_binaries {
+                if &binary.package == package {
+                    binaries_installed
+                        .entry(name.to_string())
+                        .and_modify(|x| *x = true);
+                }
+            }
+
+            super::PackageDescription {
+                name: package.name.clone(),
+                version: package.version.clone(),
+                binaries: binaries_installed,
+            }
+        }
+
+        pub fn remove_packages(&mut self, packages_to_remove: Vec<InstalledPackage>) {
+            for package in packages_to_remove {
+                self.remove_package(&package);
+            }
+        }
+
+        pub fn remove_package(&mut self, package: &InstalledPackage) {
+            let mut binaries_to_remove = Vec::new();
+            for binary in &self.installed_binaries {
+                if &binary.package == package {
+                    binaries_to_remove.push(binary.clone())
+                }
+            }
+
+            for binary in binaries_to_remove {
+                self.installed_binaries.remove(&binary);
+            }
+
+            let mut binaries_to_remove = Vec::new();
+            for (name, binary) in &self.current_binaries {
+                if binary.package.name == package.name {
+                    binaries_to_remove.push(name.clone());
+                }
+            }
+
+            for binary in binaries_to_remove {
+                self.current_binaries.remove(&binary);
+            }
+
+            self.installed_packages.remove(package);
+        }
+
         pub fn add_installed_package(&mut self, container: &InstalledPackageContainer) {
             let package = InstalledPackage::from(container);
             debug!("Adding {:?}.", &package);
@@ -489,7 +553,33 @@ mod v1 {
         let error = installed_state
             .make_package_current(&container)
             .unwrap_err();
-        assert_eq!(error.to_string(), "Package foo@1.2.3 was not installed");
+        assert_eq!(error.to_string(), "Package foo@1.2.3 was not installed.");
+    }
+
+    #[test]
+    fn package_remove_is_complete() {
+        let mut installed_state = InstalledState::default();
+        let container = make_stub_package_container("foo", "1.2.3", 1);
+        installed_state.add_installed_package(&container);
+
+        assert_eq!(installed_state.current_binaries.len(), 0);
+        assert_eq!(installed_state.installed_binaries.len(), 1);
+        assert_eq!(installed_state.installed_packages.len(), 1);
+
+        installed_state.make_package_current(&container).unwrap();
+        assert_eq!(installed_state.current_binaries.len(), 1);
+
+        let installed_package = installed_state
+            .installed_packages
+            .iter()
+            .next()
+            .unwrap()
+            .clone();
+
+        installed_state.remove_package(&installed_package);
+        assert_eq!(installed_state.current_binaries.len(), 0);
+        assert_eq!(installed_state.installed_binaries.len(), 0);
+        assert_eq!(installed_state.installed_packages.len(), 0);
     }
 
     #[cfg(test)]
@@ -521,6 +611,7 @@ mod v1 {
         InstalledPackageContainer {
             path_to_root: "/tmp/fake".to_string(),
             package,
+            remote_name: None,
         }
     }
 }

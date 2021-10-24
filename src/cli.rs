@@ -1,4 +1,4 @@
-use clap::{AppSettings, ArgGroup, Clap};
+use clap::{AppSettings, ArgEnum, ArgGroup, Clap};
 
 #[derive(Clap, Debug)]
 #[clap(author, version)]
@@ -18,7 +18,7 @@ pub struct Opts {
 pub enum SubCommand {
     /// Manage toolup managed commands
     #[clap(subcommand)]
-    Manage(MangeSubCommand),
+    Remote(RemoteSubCommand),
 
     /// Manage packages locally.
     #[clap(subcommand)]
@@ -93,13 +93,59 @@ pub struct InstallToolSubCommand {
 
 #[derive(Clap, Debug)]
 #[clap(setting = AppSettings::ColoredHelp)]
-pub enum MangeSubCommand {
+pub enum RemoteSubCommand {
     /// Add a remote tool configuration
-    Add(ToolAddArgs),
+    Add(AddRemoteSubCommand),
     /// Delete a remote tool configuration
-    Delete(ToolAddArgs),
-    /// Fetch a remote tool
-    Fetch(ToolAddArgs),
+    Delete(DeleteRemoteSubCommand),
+    /// List all the installed remotes
+    List(ListRemoteSubCommand),
+    /// Update one/many remote tool
+    Update(UpdateRemoteSubCommand),
+}
+
+#[derive(Clap, Debug)]
+pub struct UpdateRemoteSubCommand {
+    /// When specified, only the remote matching the name provided will be updated.
+    #[clap(long)]
+    pub only: Option<String>,
+}
+
+#[derive(Clap, Debug)]
+pub struct ListRemoteSubCommand {}
+
+#[derive(Clap, Debug)]
+pub struct DeleteRemoteSubCommand {
+    /// The name of the remove to delete.
+    #[clap(long)]
+    pub name: String,
+
+    /// When set, the related package will also be removed.
+    #[clap(long)]
+    pub cascade: bool,
+}
+
+#[derive(Clap, Debug)]
+pub struct AddRemoteSubCommand {
+    /// Name for the remove. This name must be unique between remote packages.
+    /// Usually this should be the name of the package.
+    #[clap(long)]
+    pub name: String,
+
+    /// The URL to download the package from.
+    #[clap(long)]
+    pub url: String,
+
+    #[clap(long, arg_enum, default_value("s3"))]
+    pub auth_type: AuthType,
+
+    #[clap(long)]
+    pub auth_script: Option<String>,
+}
+
+#[derive(ArgEnum, Debug, PartialEq, Clone)]
+pub enum AuthType {
+    S3,
 }
 
 #[derive(Clap, Debug)]

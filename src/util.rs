@@ -1,12 +1,16 @@
 use crate::cli::{GlobalConfig, LoggingOpts};
 use directories::ProjectDirs;
 use sha2::{Digest, Sha256};
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use tracing::debug;
 use tracing::level_filters::LevelFilter;
 
 pub const GLOBAL_STATE_FILE_NAME: &str = "global-state.json";
+pub const TOOL_REMOTE_DIR: &str = "remote.d";
+pub const TOOL_DOWNLOAD_DIR: &str = "remote-download";
 pub const TOOLUP_GLOBAL_CONFIG_DIR: &str = "TOOLUP_GLOBAL_CONFIG_DIR";
 pub const TOOLUP_ROOT_TOOL_DIR: &str = "TOOLUP_ROOT_TOOL_DIR";
 
@@ -20,6 +24,18 @@ pub struct GlobalFolders {
 impl GlobalFolders {
     pub fn global_state_file(&self) -> PathBuf {
         Path::new(&self.config_dir).join(GLOBAL_STATE_FILE_NAME)
+    }
+
+    pub fn make_remote_tool_config(&self, name: &str) -> PathBuf {
+        self.get_remote_config_dir().join(&format!("{}.json", name))
+    }
+
+    pub fn get_remote_config_dir(&self) -> PathBuf {
+        Path::new(&self.config_dir).join(TOOL_REMOTE_DIR)
+    }
+
+    pub fn get_remote_download_dir(&self) -> PathBuf {
+        Path::new(&self.config_dir).join(TOOL_DOWNLOAD_DIR)
     }
 
     pub fn shim_from_env() -> Self {
@@ -131,4 +147,39 @@ pub fn exec(path: String, args: Vec<String>) {
         .unwrap();
 
     process::exit(status.code().unwrap_or(0));
+}
+
+pub fn extract_env_from_script(
+    script: &crate::model::AuthScript,
+) -> Result<BTreeMap<String, String>, std::io::Error> {
+    use std::io::BufRead;
+    let mut extracted = BTreeMap::new();
+
+    let mut command = Command::new(script.script_path.to_string());
+    let output = command.output()?;
+
+    for line in output.stdout.lines() {
+        let line = line?;
+        match line.replace("export ", "").split_once("=") {
+            Some((left, right)) => {
+                extracted.insert(left.to_string(), right.to_string());
+            }
+            None => debug!("Unable to parse {:?}", line),
+        }
+    }
+
+    Ok(extracted)
+}
+
+#[test]
+fn validate_extract() {
+    let manifest_dir = env!("CARGO_MANIFEST_DIR");
+    let stub_auth = format!("{}/test/stub-auth.sh", manifest_dir);
+    let extracted = extract_env_from_script(&crate::model::AuthScript {
+        script_path: stub_auth,
+    })
+    .unwrap();
+
+    assert_eq!("bar", extracted.get("foo").unwrap());
+    assert_eq!("foo", extracted.get("bar").unwrap());
 }
