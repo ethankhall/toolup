@@ -1,7 +1,7 @@
 use std::default::Default;
 
 use anyhow::Result as AnyResult;
-use clap::Clap;
+use clap::Parser;
 use tracing::{debug, error};
 use tracing_subscriber::{filter::filter_fn, prelude::*};
 use tracing_subscriber::{

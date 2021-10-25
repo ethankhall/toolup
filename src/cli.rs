@@ -1,8 +1,7 @@
-use clap::{AppSettings, ArgEnum, ArgGroup, Clap};
+use clap::{ArgEnum, ArgGroup, ColorChoice, Parser};
 
-#[derive(Clap, Debug)]
-#[clap(author, version)]
-#[clap(setting = AppSettings::ColoredHelp)]
+#[derive(Parser, Debug)]
+#[clap(author, version, color = ColorChoice::Always)]
 pub struct Opts {
     #[clap(flatten)]
     pub logging_opts: LoggingOpts,
@@ -14,7 +13,7 @@ pub struct Opts {
     pub global_config: GlobalConfig,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub enum SubCommand {
     /// Manage toolup managed commands
     #[clap(subcommand)]
@@ -32,17 +31,17 @@ pub enum SubCommand {
     Config(ConfigSubCommand),
 }
 
-#[derive(Clap, Debug)]
-#[clap(setting = AppSettings::ColoredHelp)]
+#[derive(Parser, Debug)]
+#[clap(color = ColorChoice::Always)]
 pub enum ConfigSubCommand {
     /// Print the path to the binary link path
     GetLinkPath(GetPathSubCommand),
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct GetPathSubCommand {}
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct ExecSubCommand {
     /// Use a specific version of the binary, not the current one.
     #[clap(long, env = "TOOLUP_VERSION_OVERRIDE")]
@@ -53,8 +52,8 @@ pub struct ExecSubCommand {
     pub args: Vec<String>,
 }
 
-#[derive(Clap, Debug)]
-#[clap(setting = AppSettings::ColoredHelp)]
+#[derive(Parser, Debug)]
+#[clap(color = ColorChoice::Always)]
 pub enum PackageSubCommand {
     /// Create an empty config file intended to be updated by user.
     Init(InitToolSubCommand),
@@ -64,7 +63,7 @@ pub enum PackageSubCommand {
     Install(InstallToolSubCommand),
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct ArchiveToolSubCommand {
     /// Location on disk that has the artifact directory ready.
     ///
@@ -82,13 +81,13 @@ pub struct ArchiveToolSubCommand {
     pub archive_dir: String,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct InitToolSubCommand {
     #[clap(default_value("package.toml"))]
     pub output_file: String,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct InstallToolSubCommand {
     /// Location on disk has the pre-built package.
     ///
@@ -105,8 +104,8 @@ pub struct InstallToolSubCommand {
     pub overwrite: bool,
 }
 
-#[derive(Clap, Debug)]
-#[clap(setting = AppSettings::ColoredHelp)]
+#[derive(Parser, Debug)]
+#[clap(color = ColorChoice::Always)]
 pub enum RemoteSubCommand {
     /// Add a remote tool configuration
     Add(AddRemoteSubCommand),
@@ -118,17 +117,17 @@ pub enum RemoteSubCommand {
     Update(UpdateRemoteSubCommand),
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct UpdateRemoteSubCommand {
     /// When specified, only the remote matching the name provided will be updated.
     #[clap(long)]
     pub only: Option<String>,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct ListRemoteSubCommand {}
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct DeleteRemoteSubCommand {
     /// The name of the remove to delete.
     #[clap(long)]
@@ -139,7 +138,7 @@ pub struct DeleteRemoteSubCommand {
     pub cascade: bool,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct AddRemoteSubCommand {
     /// Name for the remove. This name must be unique between remote packages.
     /// Usually this should be the name of the package.
@@ -162,10 +161,10 @@ pub enum AuthType {
     S3,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct ToolAddArgs {}
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 #[clap(group = ArgGroup::new("logging"))]
 pub struct LoggingOpts {
     /// A level of verbosity, and can be used multiple times
@@ -185,7 +184,7 @@ pub struct LoggingOpts {
     pub console: bool,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct GlobalConfig {
     /// A level of verbosity, and can be used multiple times
     #[clap(long, global(true), env(crate::util::TOOLUP_GLOBAL_CONFIG_DIR))]
