@@ -22,13 +22,13 @@ pub enum RemoteError {
     #[error(transparent)]
     AddRemote(#[from] AddRemoteError),
     #[error(transparent)]
-    DeleteRemoteError(#[from] DeleteRemoteError),
+    DeleteRemote(#[from] DeleteRemoteError),
     #[error(transparent)]
-    ListRemoteError(#[from] ListRemoteError),
+    ListRemote(#[from] ListRemoteError),
     #[error(transparent)]
-    UpdateRemoteError(#[from] UpdateRemoteError),
+    UpdateRemote(#[from] UpdateRemoteError),
     #[error(transparent)]
-    UknownError(#[from] anyhow::Error),
+    Uknown(#[from] anyhow::Error),
 }
 
 pub async fn handle_remote(

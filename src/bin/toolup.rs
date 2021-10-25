@@ -37,10 +37,10 @@ async fn main() -> AnyResult<()> {
 
 async fn run_command(opts: Opts, global_folder: &GlobalFolders) -> Result<(), CommandError> {
     let result = match opts.sub_command {
-        SubCommand::Package(args) => handle_package(args, &global_folder).await?,
-        SubCommand::Exec(args) => handle_exec(args, &global_folder).await?,
-        SubCommand::Remote(args) => handle_remote(args, &global_folder).await?,
-        SubCommand::Config(args) => handle_config(args, &global_folder).await?,
+        SubCommand::Package(args) => handle_package(args, global_folder).await?,
+        SubCommand::Exec(args) => handle_exec(args, global_folder).await?,
+        SubCommand::Remote(args) => handle_remote(args, global_folder).await?,
+        SubCommand::Config(args) => handle_config(args, global_folder).await?,
     };
 
     Ok(result)

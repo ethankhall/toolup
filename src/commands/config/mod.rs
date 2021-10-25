@@ -1,5 +1,5 @@
+use crate::cli::ConfigSubCommand;
 use crate::commands::SubCommandExec;
-use crate::cli::{ConfigSubCommand};
 use thiserror::Error;
 
 mod get_link;
@@ -24,6 +24,6 @@ pub async fn handle_config(
 }
 
 pub mod prelude {
-    pub use super::{handle_config, ConfigError};
     pub use super::get_link::GetLinkPackageError;
+    pub use super::{handle_config, ConfigError};
 }

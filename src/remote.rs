@@ -2,7 +2,7 @@ use crate::model::{AuthStrategy, PackageRepository, RemotePackage, S3PackageRepo
 use crate::util::{extract_env_from_script, GlobalFolders};
 use rusoto_core::region::Region;
 use rusoto_core::signature::SignedRequest;
-use rusoto_credential::{ChainProvider};
+use rusoto_credential::ChainProvider;
 use rusoto_credential::ProvideAwsCredentials;
 use std::collections::BTreeMap;
 use std::fs::{self, File};
@@ -15,17 +15,17 @@ use url::Url;
 #[derive(Error, Debug)]
 pub enum RemoteError {
     #[error(transparent)]
-    StateError(#[from] crate::state::StateError),
+    State(#[from] crate::state::StateError),
     #[error(transparent)]
-    CredError(#[from] rusoto_credential::CredentialsError),
+    Cred(#[from] rusoto_credential::CredentialsError),
     #[error(transparent)]
-    UrlError(#[from] url::ParseError),
+    Url(#[from] url::ParseError),
     #[error(transparent)]
-    ReqwestError(#[from] reqwest::Error),
+    Reqwest(#[from] reqwest::Error),
     #[error(transparent)]
-    IoError(#[from] std::io::Error),
+    Io(#[from] std::io::Error),
     #[error(transparent)]
-    UknownError(#[from] anyhow::Error),
+    Uknown(#[from] anyhow::Error),
 }
 
 pub async fn update_remote(

@@ -1,29 +1,29 @@
 use crate::cli::*;
 use crate::commands::SubCommandExec;
-use crate::model::{RemotePackage};
+use crate::model::RemotePackage;
+use crate::package::{install_package, PackageError};
 use crate::remote::update_remote;
-use crate::util::{GlobalFolders};
+use crate::state::{get_current_state, update_links};
+use crate::util::GlobalFolders;
 use async_trait::async_trait;
 use std::fs;
 use thiserror::Error;
 use tracing::{debug, info};
-use crate::package::{PackageError, install_package};
-use crate::state::{update_links, get_current_state};
 
 #[derive(Error, Debug)]
 pub enum UpdateRemoteError {
     #[error(transparent)]
-    PackageError(#[from] PackageError),
+    Package(#[from] PackageError),
     #[error(transparent)]
-    RemoteError(#[from] crate::remote::RemoteError),
+    Remote(#[from] crate::remote::RemoteError),
     #[error(transparent)]
-    StateError(#[from] crate::state::StateError),
+    State(#[from] crate::state::StateError),
     #[error(transparent)]
-    JsonError(#[from] serde_json::Error),
+    Json(#[from] serde_json::Error),
     #[error(transparent)]
-    IoError(#[from] std::io::Error),
+    Io(#[from] std::io::Error),
     #[error(transparent)]
-    UknownError(#[from] anyhow::Error),
+    Uknown(#[from] anyhow::Error),
 }
 
 #[async_trait]

@@ -1,14 +1,14 @@
+use crate::util::{create_link, GlobalFolders};
 use chrono::{DateTime, Utc};
 use fs2::FileExt;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashSet, BTreeMap};
+use std::collections::{BTreeMap, HashSet};
 use std::fs::{self, File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
 use std::process::id;
 use thiserror::Error;
 use tracing::{debug, error};
-use crate::util::{create_link, GlobalFolders};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
@@ -72,13 +72,11 @@ pub async fn get_current_state(state_path: &Path) -> Result<StateContainer, Stat
     debug!("Parsed state is {:?}", global_state);
 
     // future, we woul update state file here.
-    let state = match global_state.state {
-        VersionedGlobalState::V1(state) => state,
-    };
+    let VersionedGlobalState::V1(state) = global_state.state;
 
     Ok(StateContainer {
         current_state: state,
-        updated_at: Some(global_state.updated_at.clone()),
+        updated_at: Some(global_state.updated_at),
     })
 }
 
@@ -129,8 +127,8 @@ pub async fn write_state(
     debug!("Obtained lock on {:?}", &lock_file_path);
 
     lock_file.set_len(0)?; // truncate the file
-    let lock_write_1 = write!(lock_file, "{}\n", pid);
-    let lock_write_2 = write!(lock_file, "This lock file was created by PID {} at {}. If you see this file after {} please delete it, something terrible went wrong.\n", pid, now, now);
+    let lock_write_1 = writeln!(lock_file, "{}", pid);
+    let lock_write_2 = writeln!(lock_file, "This lock file was created by PID {} at {}. If you see this file after {} please delete it, something terrible went wrong.", pid, now, now);
 
     match (lock_write_1, lock_write_2) {
         (Err(e), _) | (Ok(_), Err(e)) => {
@@ -181,7 +179,10 @@ async fn with_write_lock(
     get_current_state(state_path).await
 }
 
-pub async fn update_links(state_container: &StateContainer, global_folder: &GlobalFolders) -> Result<(), StateError> {
+pub async fn update_links(
+    state_container: &StateContainer,
+    global_folder: &GlobalFolders,
+) -> Result<(), StateError> {
     let current_state = &state_container.current_state;
     let link_dir = global_folder.get_link_dir();
     let mut installed_tools: HashSet<String> = Default::default();
@@ -192,7 +193,8 @@ pub async fn update_links(state_container: &StateContainer, global_folder: &Glob
 
     for entry in fs::read_dir(&link_dir)? {
         let entry = entry?;
-        let filename = entry.path()
+        let filename = entry
+            .path()
             .file_name()
             .expect("The state file to have a valid filename")
             .to_os_string()
@@ -202,7 +204,7 @@ pub async fn update_links(state_container: &StateContainer, global_folder: &Glob
         installed_tools.insert(filename);
     }
 
-    for (name, _binary) in &current_state.current_binaries {
+    for name in current_state.current_binaries.keys() {
         let mut current_exec = std::env::current_exe()?;
         current_exec.pop();
         current_exec.push("toolup-shim");
@@ -404,7 +406,7 @@ mod v1 {
             }
 
             for binary in &self.installed_binaries {
-                if &binary.package == &package {
+                if binary.package == package {
                     let existing = self
                         .current_binaries
                         .insert(binary.name.clone(), binary.clone());

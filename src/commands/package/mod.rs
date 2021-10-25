@@ -21,13 +21,13 @@ pub mod prelude {
 #[derive(Error, Debug)]
 pub enum PackageError {
     #[error(transparent)]
-    ArchiveError(#[from] ArchivePackageError),
+    Archive(#[from] ArchivePackageError),
     #[error(transparent)]
-    InitError(#[from] InitPackageError),
+    Init(#[from] InitPackageError),
     #[error(transparent)]
-    InstallError(#[from] InstallPackageError),
+    Install(#[from] InstallPackageError),
     #[error(transparent)]
-    UknownError(#[from] anyhow::Error),
+    Uknown(#[from] anyhow::Error),
 }
 
 pub async fn handle_package(

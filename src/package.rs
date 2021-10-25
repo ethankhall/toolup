@@ -32,19 +32,19 @@ pub enum PackageError {
     UknownError(#[from] anyhow::Error),
 }
 
-pub async fn install_package(package_path: &Path, overwrite: bool, global_folder: &GlobalFolders)  -> Result<(), PackageError> {
+pub async fn install_package(
+    package_path: &Path,
+    overwrite: bool,
+    global_folder: &GlobalFolders,
+) -> Result<(), PackageError> {
     let tool_root_dir = global_folder.tool_root_dir.clone();
     let tool_root_dir = Path::new(&tool_root_dir);
     let tmp_extract_dir = tool_root_dir.join(format!("tmp.{}", chrono::Utc::now().timestamp()));
     let package_def = extract_and_validate(package_path, &tmp_extract_dir).await?;
 
-    let real_path = move_package_to_correct_location(
-        &tmp_extract_dir,
-        tool_root_dir,
-        &package_def,
-        overwrite,
-    )
-    .await?;
+    let real_path =
+        move_package_to_correct_location(&tmp_extract_dir, tool_root_dir, &package_def, overwrite)
+            .await?;
 
     let global_state = global_folder.global_state_file();
     let mut container = get_current_state(&global_state).await?;
@@ -108,10 +108,10 @@ async fn extract_and_validate(
         serde_json::from_reader(File::open(package_def_file)?)?;
 
     for (filename, hash) in &archive_def.file_hashes {
-        valdiate_file(temp_dir.join(filename), &hash).await?;
+        valdiate_file(temp_dir.join(filename), hash).await?;
     }
 
-    for (_entrypoint, rel_path) in &archive_def.entrypoints {
+    for rel_path in archive_def.entrypoints.values() {
         set_executable(&temp_dir.join(rel_path));
     }
 

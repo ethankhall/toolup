@@ -11,11 +11,11 @@ use crate::util::GlobalFolders;
 #[derive(Error, Debug)]
 pub enum InitPackageError {
     #[error(transparent)]
-    TomlError(#[from] toml::ser::Error),
+    Toml(#[from] toml::ser::Error),
     #[error(transparent)]
-    IoError(#[from] std::io::Error),
+    Io(#[from] std::io::Error),
     #[error(transparent)]
-    UknownError(#[from] anyhow::Error),
+    Uknown(#[from] anyhow::Error),
 }
 
 #[async_trait]

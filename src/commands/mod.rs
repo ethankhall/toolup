@@ -2,15 +2,15 @@ use crate::util::GlobalFolders;
 use async_trait::async_trait;
 use thiserror::Error;
 
-mod exec;
-mod remote;
-mod package;
 mod config;
+mod exec;
+mod package;
+mod remote;
 
-pub use exec::prelude::*;
-pub use remote::prelude::*;
-pub use package::prelude::*;
 pub use config::prelude::*;
+pub use exec::prelude::*;
+pub use package::prelude::*;
+pub use remote::prelude::*;
 
 #[derive(Error, Debug)]
 pub enum CommandError {

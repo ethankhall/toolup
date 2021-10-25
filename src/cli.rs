@@ -29,9 +29,8 @@ pub enum SubCommand {
 
     /// Get config details
     #[clap(subcommand)]
-    Config(ConfigSubCommand)
+    Config(ConfigSubCommand),
 }
-
 
 #[derive(Clap, Debug)]
 #[clap(setting = AppSettings::ColoredHelp)]
@@ -41,7 +40,7 @@ pub enum ConfigSubCommand {
 }
 
 #[derive(Clap, Debug)]
-pub struct GetPathSubCommand { }
+pub struct GetPathSubCommand {}
 
 #[derive(Clap, Debug)]
 pub struct ExecSubCommand {

@@ -11,13 +11,13 @@ use tracing::info;
 #[derive(Error, Debug)]
 pub enum ListRemoteError {
     #[error(transparent)]
-    StateError(#[from] crate::state::StateError),
+    State(#[from] crate::state::StateError),
     #[error(transparent)]
-    JsonError(#[from] serde_json::Error),
+    Json(#[from] serde_json::Error),
     #[error(transparent)]
-    IoError(#[from] std::io::Error),
+    Io(#[from] std::io::Error),
     #[error(transparent)]
-    UknownError(#[from] anyhow::Error),
+    Uknown(#[from] anyhow::Error),
 }
 
 #[async_trait]
@@ -42,7 +42,7 @@ impl SubCommandExec<ListRemoteError> for ListRemoteSubCommand {
                             if *value {
                                 format!("{} (current)", key)
                             } else {
-                                format!("{}", key)
+                                key.to_string()
                             }
                         })
                         .collect();

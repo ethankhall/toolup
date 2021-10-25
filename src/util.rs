@@ -49,14 +49,14 @@ impl GlobalFolders {
         let log_dir = project_dirs.data_dir().display().to_string();
 
         let tool_root_dir = match std::env::var(TOOLUP_ROOT_TOOL_DIR) {
-            Ok(config_dir) => config_dir.to_string(),
+            Ok(config_dir) => config_dir,
             Err(_) => Path::join(project_dirs.cache_dir(), "download")
                 .display()
                 .to_string(),
         };
 
         let config_dir = match std::env::var(TOOLUP_GLOBAL_CONFIG_DIR) {
-            Ok(config_dir) => config_dir.to_string(),
+            Ok(config_dir) => config_dir,
             Err(_) => project_dirs.config_dir().to_str().unwrap().to_owned(),
         };
 
@@ -119,12 +119,18 @@ pub fn get_hash_for_contents(input: impl AsRef<[u8]>) -> String {
 }
 
 #[cfg(target_family = "unix")]
-pub fn create_link<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link: Q) -> Result<(), std::io::Error> {
+pub fn create_link<P: AsRef<Path>, Q: AsRef<Path>>(
+    original: P,
+    link: Q,
+) -> Result<(), std::io::Error> {
     std::os::unix::fs::symlink(original, link)
 }
 
 #[cfg(target_family = "windows")]
-pub fn create_link<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link: Q) -> Result<(), std::io::Error> {
+pub fn create_link<P: AsRef<Path>, Q: AsRef<Path>>(
+    original: P,
+    link: Q,
+) -> Result<(), std::io::Error> {
     std::os::windows::fs::symlink_file(original, link)
 }
 
@@ -132,7 +138,7 @@ pub fn create_link<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link: Q) -> Resu
 pub fn set_executable(_path: &PathBuf) {}
 
 #[cfg(target_family = "unix")]
-pub fn set_executable(path: &PathBuf) {
+pub fn set_executable(path: &Path) {
     use std::os::unix::fs::PermissionsExt;
 
     debug!("Setting {:?} as executable", path);

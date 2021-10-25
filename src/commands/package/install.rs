@@ -4,18 +4,18 @@ use thiserror::Error;
 
 use crate::cli::*;
 use crate::commands::SubCommandExec;
-use crate::util::{GlobalFolders};
-use crate::package::{PackageError, install_package};
-use crate::state::{update_links, get_current_state};
+use crate::package::{install_package, PackageError};
+use crate::state::{get_current_state, update_links};
+use crate::util::GlobalFolders;
 
 #[derive(Error, Debug)]
 pub enum InstallPackageError {
     #[error(transparent)]
-    StateError(#[from] crate::state::StateError),
+    State(#[from] crate::state::StateError),
     #[error(transparent)]
-    PackageError(#[from] PackageError),
+    Package(#[from] PackageError),
     #[error(transparent)]
-    UknownError(#[from] anyhow::Error),
+    Uknown(#[from] anyhow::Error),
 }
 
 #[async_trait]

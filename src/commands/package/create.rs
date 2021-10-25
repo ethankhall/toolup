@@ -118,7 +118,7 @@ fn validate_entrypoint(
     entrypoint: &str,
     archive_root: &Path,
 ) -> Result<String, ArchivePackageError> {
-    let entrypoint_path = Path::join(&archive_root, entrypoint);
+    let entrypoint_path = Path::join(archive_root, entrypoint);
     if !entrypoint_path.exists() {
         return Err(ArchivePackageError::TargetDoesNotExist {
             target: entrypoint_path.display().to_string(),

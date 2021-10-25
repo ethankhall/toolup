@@ -8,17 +8,16 @@ use crate::util::GlobalFolders;
 #[derive(Error, Debug)]
 pub enum GetLinkPackageError {
     #[error(transparent)]
-    TomlError(#[from] toml::ser::Error),
+    Toml(#[from] toml::ser::Error),
     #[error(transparent)]
-    IoError(#[from] std::io::Error),
+    Io(#[from] std::io::Error),
     #[error(transparent)]
-    UknownError(#[from] anyhow::Error),
+    Uknown(#[from] anyhow::Error),
 }
 
 #[async_trait]
 impl SubCommandExec<GetLinkPackageError> for GetPathSubCommand {
     async fn execute(self, global_folder: &GlobalFolders) -> Result<(), GetLinkPackageError> {
-
         println!("{}", global_folder.get_link_dir().display().to_string());
         Ok(())
     }
