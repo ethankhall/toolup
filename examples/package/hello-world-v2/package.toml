@@ -1,0 +1,3 @@
+name = "hello world"
+entrypoints = ['hello-world']
+version = '1.0.1'

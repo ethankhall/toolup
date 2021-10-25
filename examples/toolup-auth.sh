@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+echo "AWS_ACCESS_KEY_ID=$DO_ACCESS_KEY"
+echo "AWS_SECRET_ACCESS_KEY=$DO_SECRET_ACCESS_KEY"

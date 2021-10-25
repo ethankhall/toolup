@@ -17,3 +17,6 @@ Cargo.lock
 /target
 #**/*.rs.bk
 *.stackdump
+*.tar.gz
+/tmp
+!Cargo.lock
