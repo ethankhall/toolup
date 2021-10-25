@@ -26,7 +26,22 @@ pub enum SubCommand {
 
     /// Exec one of the installed packages
     Exec(ExecSubCommand),
+
+    /// Get config details
+    #[clap(subcommand)]
+    Config(ConfigSubCommand)
 }
+
+
+#[derive(Clap, Debug)]
+#[clap(setting = AppSettings::ColoredHelp)]
+pub enum ConfigSubCommand {
+    /// Print the path to the binary link path
+    GetLinkPath(GetPathSubCommand),
+}
+
+#[derive(Clap, Debug)]
+pub struct GetPathSubCommand { }
 
 #[derive(Clap, Debug)]
 pub struct ExecSubCommand {

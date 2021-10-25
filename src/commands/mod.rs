@@ -5,10 +5,12 @@ use thiserror::Error;
 mod exec;
 mod remote;
 mod package;
+mod config;
 
 pub use exec::prelude::*;
 pub use remote::prelude::*;
 pub use package::prelude::*;
+pub use config::prelude::*;
 
 #[derive(Error, Debug)]
 pub enum CommandError {
@@ -18,6 +20,8 @@ pub enum CommandError {
     PackageError(#[from] PackageError),
     #[error(transparent)]
     ExecError(#[from] ExecError),
+    #[error(transparent)]
+    ConfigError(#[from] ConfigError),
     #[error(transparent)]
     UknownError(#[from] anyhow::Error),
 }

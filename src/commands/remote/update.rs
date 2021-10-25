@@ -8,6 +8,7 @@ use std::fs;
 use thiserror::Error;
 use tracing::{debug, info};
 use crate::package::{PackageError, install_package};
+use crate::state::{update_links, get_current_state};
 
 #[derive(Error, Debug)]
 pub enum UpdateRemoteError {
@@ -42,6 +43,10 @@ impl SubCommandExec<UpdateRemoteError> for UpdateRemoteSubCommand {
                 fs::remove_file(&artifact)?;
             }
         }
+
+        let global_state = global_folder.global_state_file();
+        let container = get_current_state(&global_state).await?;
+        update_links(&container, global_folder).await?;
 
         Ok(())
     }

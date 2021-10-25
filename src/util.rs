@@ -13,6 +13,7 @@ pub const TOOL_REMOTE_DIR: &str = "remote.d";
 pub const TOOL_DOWNLOAD_DIR: &str = "remote-download";
 pub const TOOLUP_GLOBAL_CONFIG_DIR: &str = "TOOLUP_GLOBAL_CONFIG_DIR";
 pub const TOOLUP_ROOT_TOOL_DIR: &str = "TOOLUP_ROOT_TOOL_DIR";
+pub const TOOL_LINK_FOLDER_NAME: &str = "_bin";
 
 #[derive(Debug)]
 pub struct GlobalFolders {
@@ -36,6 +37,10 @@ impl GlobalFolders {
 
     pub fn get_remote_download_dir(&self) -> PathBuf {
         Path::new(&self.config_dir).join(TOOL_DOWNLOAD_DIR)
+    }
+
+    pub fn get_link_dir(&self) -> PathBuf {
+        Path::new(&self.tool_root_dir).join(TOOL_LINK_FOLDER_NAME)
     }
 
     pub fn shim_from_env() -> Self {
@@ -112,6 +117,19 @@ pub fn get_hash_for_contents(input: impl AsRef<[u8]>) -> String {
 
     format!("{:x}", result)
 }
+
+#[cfg(target_family = "unix")]
+pub fn create_link<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link: Q) -> Result<(), std::io::Error> {
+    std::os::unix::fs::symlink(original, link)
+}
+
+#[cfg(target_family = "windows")]
+pub fn create_link<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link: Q) -> Result<(), std::io::Error> {
+    std::os::windows::fs::symlink_file(original, link)
+}
+
+#[cfg(target_family = "windows")]
+pub fn set_executable(_path: &PathBuf) {}
 
 #[cfg(target_family = "unix")]
 pub fn set_executable(path: &PathBuf) {

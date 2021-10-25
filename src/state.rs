@@ -1,13 +1,14 @@
 use chrono::{DateTime, Utc};
 use fs2::FileExt;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{HashSet, BTreeMap};
 use std::fs::{self, File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
 use std::process::id;
 use thiserror::Error;
 use tracing::{debug, error};
+use crate::util::{create_link, GlobalFolders};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
@@ -178,6 +179,52 @@ async fn with_write_lock(
     debug!("State file {:?} written successfully", state_path);
 
     get_current_state(state_path).await
+}
+
+pub async fn update_links(state_container: &StateContainer, global_folder: &GlobalFolders) -> Result<(), StateError> {
+    let current_state = &state_container.current_state;
+    let link_dir = global_folder.get_link_dir();
+    let mut installed_tools: HashSet<String> = Default::default();
+
+    if !link_dir.exists() {
+        fs::create_dir_all(&link_dir)?;
+    }
+
+    for entry in fs::read_dir(&link_dir)? {
+        let entry = entry?;
+        let filename = entry.path()
+            .file_name()
+            .expect("The state file to have a valid filename")
+            .to_os_string()
+            .into_string()
+            .expect("State file to have a valid filename.");
+
+        installed_tools.insert(filename);
+    }
+
+    for (name, _binary) in &current_state.current_binaries {
+        let mut current_exec = std::env::current_exe()?;
+        current_exec.pop();
+        current_exec.push("toolup-shim");
+
+        let binary_link = Path::join(&link_dir, name);
+        debug!("Setting up link {} to {:?}", name, binary_link);
+        if binary_link.exists() {
+            std::fs::remove_file(&binary_link)?;
+        }
+        create_link(current_exec, binary_link)?;
+        installed_tools.remove(name);
+    }
+
+    for missing_binary in installed_tools {
+        let binary_link = Path::join(&link_dir, missing_binary);
+        if binary_link.exists() {
+            debug!("Removing {:?}", binary_link);
+            std::fs::remove_file(&binary_link)?;
+        }
+    }
+
+    Ok(())
 }
 
 pub struct PackageDescription {
