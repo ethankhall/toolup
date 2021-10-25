@@ -1,7 +1,0 @@
-[executable.clu]
-refresh_interval = "1d"
-
-[executable.clu.source]
-url = "https://toolup.sfo3.digitaloceanspaces.com/clu/latest.tgz"
-auth = "from-command"
-auth-command = "./toolup-auth.sh"
