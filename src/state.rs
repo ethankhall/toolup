@@ -211,7 +211,8 @@ pub async fn update_links(
 
         let binary_link = Path::join(&link_dir, name);
         debug!("Setting up link {} to {:?}", name, binary_link);
-        if binary_link.exists() {
+        if binary_link.exists() || binary_link.is_symlink() {
+            debug!("Removing existing binary link");
             std::fs::remove_file(&binary_link)?;
         }
         create_link(current_exec, binary_link)?;
@@ -225,6 +226,8 @@ pub async fn update_links(
             std::fs::remove_file(&binary_link)?;
         }
     }
+
+    debug!("Link updates complete");
 
     Ok(())
 }
@@ -254,6 +257,7 @@ mod v1 {
         #[derivative(PartialEq = "ignore")]
         pub package_dir: String,
         pub remote_name: Option<String>,
+        pub etag: Option<String>,
     }
 
     impl Hash for InstalledPackage {
@@ -270,6 +274,7 @@ mod v1 {
                 version: container.package.version.clone(),
                 package_dir: container.path_to_root.clone(),
                 remote_name: container.remote_name.clone(),
+                etag: container.etag.clone(),
             }
         }
     }
@@ -299,6 +304,8 @@ mod v1 {
         pub installed_packages: HashSet<InstalledPackage>,
         pub installed_binaries: HashSet<InstalledBinary>,
         pub current_binaries: BTreeMap<String, InstalledBinary>,
+        #[serde(default = "Default::default")]
+        pub current_packages: BTreeMap<String, InstalledPackage>,
     }
 
     impl InstalledState {
@@ -421,6 +428,13 @@ mod v1 {
                 }
             }
 
+            if let Some(existing) = &self
+                .current_packages
+                .insert(package.name.clone(), package.clone())
+            {
+                debug!("Replacing existing packag{:?} with {:?}", existing, package);
+            }
+
             Ok(())
         }
 
@@ -457,6 +471,7 @@ mod v1 {
                 installed_binaries: Default::default(),
                 installed_packages: Default::default(),
                 current_binaries: Default::default(),
+                current_packages: Default::default(),
             }
         }
     }
@@ -661,6 +676,7 @@ mod v1 {
             path_to_root: "/tmp/fake".to_string(),
             package,
             remote_name: None,
+            etag: None,
         }
     }
 }

@@ -23,4 +23,5 @@ pub struct InstalledPackageContainer {
     pub package: GeneratedDefinedPackage,
     pub path_to_root: String,
     pub remote_name: Option<String>,
+    pub etag: Option<String>,
 }

@@ -1,4 +1,4 @@
-use clap::{ArgEnum, ArgGroup, ColorChoice, Parser};
+use clap::{ArgGroup, ColorChoice, Parser};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, color = ColorChoice::Always)]
@@ -108,6 +108,7 @@ pub struct InstallToolSubCommand {
 #[clap(color = ColorChoice::Always)]
 pub enum RemoteSubCommand {
     /// Add a remote tool configuration
+    #[clap(subcommand)]
     Add(AddRemoteSubCommand),
     /// Delete a remote tool configuration
     Delete(DeleteRemoteSubCommand),
@@ -139,7 +140,28 @@ pub struct DeleteRemoteSubCommand {
 }
 
 #[derive(Parser, Debug)]
-pub struct AddRemoteSubCommand {
+#[clap(color = ColorChoice::Always)]
+pub enum AddRemoteSubCommand {
+    /// Create a remote based on the local filesystem
+    Local(AddRemoteLocalSubCommand),
+    /// Create a remote backed by an S3 bucket
+    S3(AddRemoteS3SubCommand)
+}
+
+#[derive(Parser, Debug)]
+pub struct AddRemoteLocalSubCommand {
+    /// Name for the remove. This name must be unique between remote packages.
+    /// Usually this should be the name of the package.
+    #[clap(long)]
+    pub name: String,
+
+    /// The Location on disk to install the package from.
+    #[clap(long)]
+    pub path: String,
+}
+
+#[derive(Parser, Debug)]
+pub struct AddRemoteS3SubCommand {
     /// Name for the remove. This name must be unique between remote packages.
     /// Usually this should be the name of the package.
     #[clap(long)]
@@ -149,16 +171,8 @@ pub struct AddRemoteSubCommand {
     #[clap(long)]
     pub url: String,
 
-    #[clap(long, arg_enum, default_value("s3"))]
-    pub auth_type: AuthType,
-
     #[clap(long)]
     pub auth_script: Option<String>,
-}
-
-#[derive(ArgEnum, Debug, PartialEq, Clone)]
-pub enum AuthType {
-    S3,
 }
 
 #[derive(Parser, Debug)]

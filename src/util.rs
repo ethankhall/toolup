@@ -123,6 +123,7 @@ pub fn create_link<P: AsRef<Path>, Q: AsRef<Path>>(
     original: P,
     link: Q,
 ) -> Result<(), std::io::Error> {
+    debug!("Creating symlink");
     std::os::unix::fs::symlink(original, link)
 }
 

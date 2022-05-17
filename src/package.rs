@@ -7,6 +7,7 @@ use thiserror::Error;
 use tracing::{debug, info, instrument};
 
 use crate::model::{GeneratedDefinedPackage, InstalledPackageContainer, GENERATED_FILE_NAME};
+use crate::remote::DownloadedArtifact;
 use crate::state::{get_current_state, write_state};
 use crate::util::{get_hash_for_contents, set_executable, GlobalFolders};
 
@@ -33,14 +34,14 @@ pub enum PackageError {
 }
 
 pub async fn install_package(
-    package_path: &Path,
+    local_artifact: &DownloadedArtifact,
     overwrite: bool,
     global_folder: &GlobalFolders,
 ) -> Result<(), PackageError> {
     let tool_root_dir = global_folder.tool_root_dir.clone();
     let tool_root_dir = Path::new(&tool_root_dir);
     let tmp_extract_dir = tool_root_dir.join(format!("tmp.{}", chrono::Utc::now().timestamp()));
-    let package_def = extract_and_validate(package_path, &tmp_extract_dir).await?;
+    let package_def = extract_and_validate(&local_artifact.path, &tmp_extract_dir).await?;
 
     let real_path =
         move_package_to_correct_location(&tmp_extract_dir, tool_root_dir, &package_def, overwrite)
@@ -52,6 +53,7 @@ pub async fn install_package(
         package: package_def,
         path_to_root: real_path,
         remote_name: None,
+        etag: local_artifact.etag.clone(),
     };
     container
         .current_state
