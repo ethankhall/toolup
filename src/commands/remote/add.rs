@@ -32,7 +32,6 @@ impl SubCommandExec<AddRemoteError> for AddRemoteSubCommand {
 #[async_trait]
 impl SubCommandExec<AddRemoteError> for AddRemoteLocalSubCommand {
     async fn execute(self, global_folder: &GlobalFolders) -> Result<(), AddRemoteError> {
-        
         let local_package = LocalPackageRepository {
             path: self.path.clone(),
         };
@@ -66,7 +65,11 @@ impl SubCommandExec<AddRemoteError> for AddRemoteS3SubCommand {
     }
 }
 
-fn add_remote_package(name: &str, package: RemotePackage, global_folder: &GlobalFolders) -> Result<(), AddRemoteError> {
+fn add_remote_package(
+    name: &str,
+    package: RemotePackage,
+    global_folder: &GlobalFolders,
+) -> Result<(), AddRemoteError> {
     let pretty_json = serde_json::to_string_pretty(&package)?;
     let config_file = global_folder.make_remote_tool_config(&name);
     let parent = config_file

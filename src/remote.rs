@@ -1,4 +1,6 @@
-use crate::model::{AuthStrategy, PackageRepository, RemotePackage, LocalPackageRepository, S3PackageRepository};
+use crate::model::{
+    AuthStrategy, LocalPackageRepository, PackageRepository, RemotePackage, S3PackageRepository,
+};
 use crate::util::{extract_env_from_script, GlobalFolders};
 use async_trait::async_trait;
 use reqwest::header::ETAG;

@@ -47,12 +47,12 @@ impl GlobalFolders {
 
         let tool_root_dir = match std::env::var(TOOLUP_ROOT_TOOL_DIR) {
             Ok(config_dir) => config_dir,
-            Err(_) => default_toolup_dir()
+            Err(_) => default_toolup_dir(),
         };
 
         let config_dir = match std::env::var(TOOLUP_GLOBAL_CONFIG_DIR) {
             Ok(config_dir) => config_dir,
-            Err(_) => default_config_dir()
+            Err(_) => default_config_dir(),
         };
 
         Self {

@@ -25,7 +25,6 @@ pub struct S3PackageRepository {
     pub auth_strategy: AuthStrategy,
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct LocalPackageRepository {

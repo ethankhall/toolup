@@ -145,7 +145,7 @@ pub enum AddRemoteSubCommand {
     /// Create a remote based on the local filesystem
     Local(AddRemoteLocalSubCommand),
     /// Create a remote backed by an S3 bucket
-    S3(AddRemoteS3SubCommand)
+    S3(AddRemoteS3SubCommand),
 }
 
 #[derive(Parser, Debug)]
