@@ -12,7 +12,7 @@ In order to get the tools on you're path, you'll need need to add the
 following to your profile.
 
 ```shell
-export PATH=`toolup config get-link-path`:$PATH
+export PATH=`$HOME/.toolup/bin/`:$PATH
 ```
 
 This will ensure that the binaries that get added will be on your path.
@@ -22,10 +22,10 @@ This will ensure that the binaries that get added will be on your path.
 In general, an IT department will be managing config. The config should be placed based
 on the following table.
 
-|    OS    |                            Path                            |
-| :------: | :--------------------------------------------------------: |
-| `darwin` | `~/Library/Application\ Support/io.ehdev.toolup/remote.d/` |
-| `linux`  |                    `~/.config/toolup/`                     |
+|    OS    |        Path         |
+| :------: | :-----------------: |
+| `darwin` | `~/.config/toolup/` |
+| `linux`  | `~/.config/toolup/` |
 
 If an IT department would loke to use a different location, they will need to set
 `TOOLUP_GLOBAL_CONFIG_DIR`.

@@ -1,5 +1,4 @@
 use crate::cli::{GlobalConfig, LoggingOpts};
-use directories::ProjectDirs;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::fs;
@@ -13,7 +12,7 @@ pub const TOOL_REMOTE_DIR: &str = "remote.d";
 pub const TOOL_DOWNLOAD_DIR: &str = "remote-download";
 pub const TOOLUP_GLOBAL_CONFIG_DIR: &str = "TOOLUP_GLOBAL_CONFIG_DIR";
 pub const TOOLUP_ROOT_TOOL_DIR: &str = "TOOLUP_ROOT_TOOL_DIR";
-pub const TOOL_LINK_FOLDER_NAME: &str = "_bin";
+pub const TOOL_LINK_FOLDER_NAME: &str = "bin";
 
 #[derive(Debug)]
 pub struct GlobalFolders {
@@ -44,20 +43,16 @@ impl GlobalFolders {
     }
 
     pub fn shim_from_env() -> Self {
-        let project_dirs =
-            ProjectDirs::from("io", "ehdev", "toolup").expect("To create project dirs");
-        let log_dir = project_dirs.data_dir().display().to_string();
+        let log_dir = default_log_dir();
 
         let tool_root_dir = match std::env::var(TOOLUP_ROOT_TOOL_DIR) {
             Ok(config_dir) => config_dir,
-            Err(_) => Path::join(project_dirs.cache_dir(), "download")
-                .display()
-                .to_string(),
+            Err(_) => default_toolup_dir()
         };
 
         let config_dir = match std::env::var(TOOLUP_GLOBAL_CONFIG_DIR) {
             Ok(config_dir) => config_dir,
-            Err(_) => project_dirs.config_dir().to_str().unwrap().to_owned(),
+            Err(_) => default_config_dir()
         };
 
         Self {
@@ -68,22 +63,38 @@ impl GlobalFolders {
     }
 }
 
+pub fn default_log_dir() -> String {
+    let mut log_dir = dirs::home_dir().expect("To be able to get user's home directory");
+    log_dir.push(".toolup");
+    log_dir.push("logs");
+
+    log_dir.display().to_string()
+}
+
+pub fn default_toolup_dir() -> String {
+    let home_dir = dirs::home_dir().expect("To be able to get user's home directory");
+    Path::join(&home_dir, ".toolup").display().to_string()
+}
+
+pub fn default_config_dir() -> String {
+    let mut config_dir = dirs::home_dir().expect("To be able to get user's home directory");
+    config_dir.push(".config");
+    config_dir.push("toolup");
+    config_dir.display().to_string()
+}
+
 impl From<&GlobalConfig> for GlobalFolders {
     fn from(cli: &GlobalConfig) -> Self {
-        let project_dirs =
-            ProjectDirs::from("io", "ehdev", "toolup").expect("To create project dirs");
-        let log_dir = project_dirs.data_dir().display().to_string();
+        let log_dir = default_log_dir();
 
         let tool_root_dir = match &cli.tool_root_dir {
             Some(config_dir) => config_dir.to_string(),
-            None => Path::join(project_dirs.cache_dir(), "download")
-                .display()
-                .to_string(),
+            None => default_toolup_dir(),
         };
 
         let config_dir = match &cli.config_dir {
             Some(config_dir) => config_dir.to_string(),
-            None => project_dirs.config_dir().to_str().unwrap().to_owned(),
+            None => default_config_dir(),
         };
 
         Self {
