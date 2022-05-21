@@ -44,6 +44,7 @@ impl fmt::Display for PackageRepository {
 #[serde(tag = "auth-strategy", rename_all = "kebab-case")]
 pub enum AuthStrategy {
     None,
+    DefaultAwsAuth,
     Script(AuthScript),
 }
 

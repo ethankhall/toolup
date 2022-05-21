@@ -3,6 +3,7 @@ mod delete;
 mod list;
 mod update;
 
+use tracing::debug;
 use crate::cli::RemoteSubCommand;
 use crate::commands::SubCommandExec;
 use crate::util::GlobalFolders;
@@ -32,10 +33,11 @@ pub enum RemoteError {
 }
 
 pub async fn handle_remote(
-    manage_sub_args: RemoteSubCommand,
+    remote_args: RemoteSubCommand,
     global_folder: &GlobalFolders,
 ) -> Result<(), RemoteError> {
-    match manage_sub_args {
+    debug!("Remote command: {:?}", remote_args);
+    match remote_args {
         RemoteSubCommand::Add(args) => args.execute(global_folder).await?,
         RemoteSubCommand::Delete(args) => args.execute(global_folder).await?,
         RemoteSubCommand::List(args) => args.execute(global_folder).await?,

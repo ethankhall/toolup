@@ -1,4 +1,4 @@
-use clap::{ArgGroup, ColorChoice, Parser};
+use clap::{ArgGroup, ColorChoice, Parser, ArgEnum};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, color = ColorChoice::Always)]
@@ -94,7 +94,6 @@ pub struct InstallToolSubCommand {
     /// This package will be extracted, and placed inside your user directory.
     /// When a package is isntalled locally, it will no longer support refreshs
     /// from an upstream source.
-    #[clap(long)]
     pub archive_path: String,
 
     /// If the package already exists, overwrite it.
@@ -171,8 +170,18 @@ pub struct AddRemoteS3SubCommand {
     #[clap(long)]
     pub url: String,
 
-    #[clap(long)]
+    #[clap(long, arg_enum, default_value("anonymous"))]
+    pub auth: S3AuthType,
+
+    #[clap(long, required_if_eq("auth", "host"))]
+    /// Location of script, that will export environment variables to auth with S3
     pub auth_script: Option<String>,
+}
+
+#[derive(ArgEnum, Debug, PartialEq, Clone)]
+pub enum S3AuthType {
+    Anonymous,
+    Host,
 }
 
 #[derive(Parser, Debug)]

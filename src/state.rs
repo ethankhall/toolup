@@ -52,6 +52,18 @@ pub struct StateContainer {
     pub current_state: v1::InstalledState,
 }
 
+impl StateContainer {
+    pub fn list_installed_packages(&self) -> Vec<PackageDescription> {
+        self.current_state.installed_packages.values().map(|x| self.current_state.describe_package(x)).collect()
+    }
+
+    pub fn remove_packages(&mut self, packages_to_remove: Vec<PackageDescription>) {
+        for package in packages_to_remove {
+            self.current_state.remove_package_by_id(&package.package_id);
+        }
+    }
+}
+
 impl Default for StateContainer {
     fn default() -> Self {
         Self {
@@ -236,14 +248,16 @@ pub struct PackageDescription {
     pub name: String,
     pub version: String,
     pub binaries: BTreeMap<String, bool>,
+    pub remote_name: Option<String>,
+    pub package_id: String,
 }
 
 mod v1 {
     use super::StateError;
-    use crate::model::InstalledPackageContainer;
+    use crate::model::{GenericPackage, InstalledPackageContainer};
     use derivative::Derivative;
     use serde::{Deserialize, Serialize};
-    use std::collections::{BTreeMap, HashSet};
+    use std::collections::{BTreeMap};
     use std::hash::{Hash, Hasher};
     use std::path::Path;
     use tracing::{debug, warn};
@@ -252,12 +266,27 @@ mod v1 {
     #[serde(rename_all = "kebab-case")]
     #[derivative(Eq, PartialOrd, Ord, PartialEq)]
     pub struct InstalledPackage {
+        pub id: String,
         pub name: String,
         pub version: String,
         #[derivative(PartialEq = "ignore")]
         pub package_dir: String,
         pub remote_name: Option<String>,
         pub etag: Option<String>,
+    }
+
+    impl GenericPackage for &InstalledPackage {
+        fn name(&self) -> String {
+            self.name.clone()
+        }
+    
+        fn version(&self) -> String {
+            self.version.clone()
+        }
+    
+        fn id(&self) -> String {
+            self.id.clone()
+        }
     }
 
     impl Hash for InstalledPackage {
@@ -270,6 +299,7 @@ mod v1 {
     impl From<&InstalledPackageContainer> for InstalledPackage {
         fn from(container: &InstalledPackageContainer) -> Self {
             Self {
+                id: crate::util::make_package_id(&container.package.name, &container.package.version),
                 name: container.package.name.clone(),
                 version: container.package.version.clone(),
                 package_dir: container.path_to_root.clone(),
@@ -283,26 +313,39 @@ mod v1 {
     #[derivative(Eq, PartialOrd, Ord, PartialEq)]
     #[serde(rename_all = "kebab-case")]
     pub struct InstalledBinary {
+        pub id: String,
         pub name: String,
         pub version: String,
         #[derivative(PartialEq = "ignore")]
         pub path_to_exec: String,
-        pub package: InstalledPackage,
+        pub package_id: String,
+    }
+
+    impl InstalledBinary {
+        fn new<P>(package: &P, binary_name: String, path: String) -> Self where P: GenericPackage {
+            InstalledBinary {
+                id: format!("urn:package:toolup/{}/{}/{}", package.name(), package.version(), binary_name.to_string()),
+                name: binary_name.to_string(),
+                version: package.version(),
+                path_to_exec: path,
+                package_id: package.id(),
+            }
+        }
     }
 
     impl Hash for InstalledBinary {
         fn hash<H: Hasher>(&self, state: &mut H) {
             self.name.hash(state);
             self.version.hash(state);
-            self.package.hash(state);
+            self.package_id.hash(state);
         }
     }
 
     #[derive(Serialize, Deserialize, Debug, Clone)]
     #[serde(rename_all = "kebab-case")]
     pub struct InstalledState {
-        pub installed_packages: HashSet<InstalledPackage>,
-        pub installed_binaries: HashSet<InstalledBinary>,
+        pub installed_packages: BTreeMap<String, InstalledPackage>,
+        pub installed_binaries: BTreeMap<String, InstalledBinary>,
         pub current_binaries: BTreeMap<String, InstalledBinary>,
         #[serde(default = "Default::default")]
         pub current_packages: BTreeMap<String, InstalledPackage>,
@@ -311,14 +354,14 @@ mod v1 {
     impl InstalledState {
         pub fn describe_package(&self, package: &InstalledPackage) -> super::PackageDescription {
             let mut binaries_installed = BTreeMap::new();
-            for binary in &self.installed_binaries {
-                if &binary.package == package {
+            for (_binary_id, binary) in &self.installed_binaries {
+                if binary.package_id == package.id {
                     binaries_installed.insert(binary.name.clone(), false);
                 }
             }
 
             for (name, binary) in &self.current_binaries {
-                if &binary.package == package {
+                if binary.package_id == package.id {
                     binaries_installed
                         .entry(name.to_string())
                         .and_modify(|x| *x = true);
@@ -329,60 +372,58 @@ mod v1 {
                 name: package.name.clone(),
                 version: package.version.clone(),
                 binaries: binaries_installed,
+                remote_name: package.remote_name.clone(),
+                package_id: package.id.clone(),
             }
+        }
+
+        pub fn remove_package_by_id(&mut self, id: &str) {
+            let mut binary_ids_to_remove = Vec::new();
+            for (binary_id, binary) in &self.installed_binaries {
+                if binary.package_id == id {
+                    binary_ids_to_remove.push(binary_id.to_owned())
+                }
+            }
+
+            for binary_id in binary_ids_to_remove {
+                self.installed_binaries.remove(&binary_id);
+            }
+
+            let mut binary_name_to_remove: Vec<String> = Vec::new();
+            for (name, binary) in &self.current_binaries {
+                if binary.package_id == id {
+                    binary_name_to_remove.push(name.to_owned());
+                }
+            }
+
+            for binary_name in binary_name_to_remove {
+                self.current_binaries.remove(&binary_name);
+            }
+
+            self.installed_packages.remove(id);
         }
 
         pub fn remove_packages(&mut self, packages_to_remove: Vec<InstalledPackage>) {
             for package in packages_to_remove {
-                self.remove_package(&package);
+                self.remove_package_by_id(&package.id);
             }
-        }
-
-        pub fn remove_package(&mut self, package: &InstalledPackage) {
-            let mut binaries_to_remove = Vec::new();
-            for binary in &self.installed_binaries {
-                if &binary.package == package {
-                    binaries_to_remove.push(binary.clone())
-                }
-            }
-
-            for binary in binaries_to_remove {
-                self.installed_binaries.remove(&binary);
-            }
-
-            let mut binaries_to_remove = Vec::new();
-            for (name, binary) in &self.current_binaries {
-                if binary.package.name == package.name {
-                    binaries_to_remove.push(name.clone());
-                }
-            }
-
-            for binary in binaries_to_remove {
-                self.current_binaries.remove(&binary);
-            }
-
-            self.installed_packages.remove(package);
         }
 
         pub fn add_installed_package(&mut self, container: &InstalledPackageContainer) {
             let package = InstalledPackage::from(container);
             debug!("Adding {:?}.", &package);
 
-            self.installed_packages.replace(package.clone());
+            self.installed_packages.insert(package.id.clone(), package.clone());
             for (binary_name, relative_path) in &container.package.entrypoints {
-                let binary = InstalledBinary {
-                    name: binary_name.to_string(),
-                    version: package.version.clone(),
-                    path_to_exec: Path::new(&container.path_to_root)
+                let binary_path = Path::new(&container.path_to_root)
                         .join(relative_path)
                         .display()
-                        .to_string(),
-                    package: package.clone(),
-                };
+                        .to_string();
+                let binary = InstalledBinary::new(&container.package, binary_name.to_string(), binary_path);
 
                 debug!("Adding binary {:?}", binary);
 
-                self.installed_binaries.replace(binary);
+                self.installed_binaries.insert(binary.id.clone(), binary);
             }
         }
 
@@ -394,32 +435,37 @@ mod v1 {
 
             debug!("Setting {:?} to be current.", &package);
 
-            if !self.installed_packages.contains(&package) {
+            if !self.installed_packages.contains_key(&package.id) {
                 return Err(StateError::PackageNotInstalled {
                     name: package.name,
                     version: package.version,
                 });
             }
 
-            let mut binaries_to_remove = Vec::new();
-            for (name, binary) in &self.current_binaries {
-                if binary.package.name == package.name {
-                    binaries_to_remove.push(name.clone());
+            let package_to_remove = self.current_packages.get(&package.name);
+
+            if let Some(package_to_remove) = package_to_remove {
+
+                let mut binary_names_to_remove = Vec::new();
+                for (name, binary) in &self.current_binaries {
+                    if binary.package_id == package_to_remove.id {
+                        binary_names_to_remove.push(name.clone());
+                    }
+                }
+
+                for binary in binary_names_to_remove {
+                    self.current_binaries.remove(&binary);
                 }
             }
 
-            for binary in binaries_to_remove {
-                self.current_binaries.remove(&binary);
-            }
-
-            for binary in &self.installed_binaries {
-                if binary.package == package {
+            for (_binary_id, binary) in &self.installed_binaries {
+                if binary.package_id == package.id {
                     let existing = self
                         .current_binaries
                         .insert(binary.name.clone(), binary.clone());
                     if let Some(old_binary) = existing {
-                        if old_binary.package.name != package.name {
-                            warn!(target: "user", "{} is replacing a binary that was managed by {}", package.name, old_binary.package.name);
+                        if old_binary.package_id != package.id {
+                            warn!(target: "user", "{} is replacing a managed binary", package.name);
                         }
                         debug!("Removing old binary {:?}.", old_binary);
                     }
@@ -453,7 +499,7 @@ mod v1 {
         }
 
         pub fn get_binary_path(&self, name: &str, version: &str) -> Result<String, StateError> {
-            for binary in &self.installed_binaries {
+            for (_binary_id, binary) in &self.installed_binaries {
                 if binary.name == name && binary.version == version {
                     return Ok(binary.path_to_exec.clone());
                 }
@@ -492,7 +538,6 @@ mod v1 {
         let bin = installed_state.current_binaries.get("bin-1").unwrap();
         assert_eq!(bin.name, "bin-1");
         assert_eq!(bin.version, "1.2.3");
-        assert_eq!(bin.package, InstalledPackage::from(&container));
         assert_eq!(bin.path_to_exec, "/tmp/fake/bin-1");
     }
 
@@ -516,7 +561,6 @@ mod v1 {
         let bin = installed_state.current_binaries.get("bin-1").unwrap();
         assert_eq!(bin.name, "bin-1");
         assert_eq!(bin.version, "1.2.3");
-        assert_eq!(bin.package, InstalledPackage::from(&container));
         assert_eq!(bin.path_to_exec, "/tmp/foo/fake/bin-1");
     }
 
@@ -574,9 +618,9 @@ mod v1 {
         // Roll back to old version, should remove all binaries of package
         {
             installed_state.make_package_current(&container1).unwrap();
-            let installed_package = InstalledPackage::from(&container1);
             assert_eq!(installed_state.current_binaries.len(), 1);
 
+            let installed_package = InstalledPackage::from(&container1);
             let bin = installed_state.current_binaries.get("bin-1").unwrap();
             assert_eq!(
                 bin,
@@ -588,7 +632,7 @@ mod v1 {
     #[cfg(test)]
     fn fake_binary(
         name: &str,
-        version: &str,
+        _version: &str,
         is_sub: bool,
         package: &InstalledPackage,
     ) -> InstalledBinary {
@@ -597,12 +641,7 @@ mod v1 {
         } else {
             format!("/tmp/fake/{}", name)
         };
-        InstalledBinary {
-            name: name.to_string(),
-            version: version.to_string(),
-            path_to_exec: path,
-            package: package.clone(),
-        }
+        InstalledBinary::new(&package, name.to_string(), path)
     }
 
     #[test]
@@ -635,12 +674,12 @@ mod v1 {
 
         let installed_package = installed_state
             .installed_packages
-            .iter()
+            .values()
             .next()
             .unwrap()
             .clone();
 
-        installed_state.remove_package(&installed_package);
+        installed_state.remove_package_by_id(&installed_package.id);
         assert_eq!(installed_state.current_binaries.len(), 0);
         assert_eq!(installed_state.installed_binaries.len(), 0);
         assert_eq!(installed_state.installed_packages.len(), 0);

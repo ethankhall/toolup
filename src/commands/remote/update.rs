@@ -23,15 +23,22 @@ pub enum UpdateRemoteError {
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]
-    Uknown(#[from] anyhow::Error),
+    Unkown(#[from] anyhow::Error),
+    #[error("Application has not been configured")]
+    NoGlobalStateFile
 }
 
 #[async_trait]
 impl SubCommandExec<UpdateRemoteError> for UpdateRemoteSubCommand {
     async fn execute(self, global_folder: &GlobalFolders) -> Result<(), UpdateRemoteError> {
+        debug!("Executing update");
         let remote_folder = global_folder.get_remote_config_dir();
         let global_state = global_folder.global_state_file();
         let container = get_current_state(&global_state).await?;
+
+        if !remote_folder.exists() {
+            std::fs::create_dir_all(&remote_folder)?;
+        }
 
         for entry in fs::read_dir(remote_folder)? {
             let entry = entry?;

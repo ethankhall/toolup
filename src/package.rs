@@ -129,6 +129,7 @@ async fn move_package_to_correct_location(
     let unix_friendly_name = package.name.replace(' ', "_");
     let real_dest = tool_root
         .to_owned()
+        .join("packages")
         .join(&unix_friendly_name)
         .join(&package.version);
 

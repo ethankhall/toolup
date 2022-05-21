@@ -124,7 +124,10 @@ impl S3PackageRepository {
     async fn make_presigned_url(&self, method: &str) -> Result<String, RemoteError> {
         let extra_env = match &self.auth_strategy {
             AuthStrategy::Script(auth_script) => extract_env_from_script(auth_script)?,
-            AuthStrategy::None => BTreeMap::default(),
+            AuthStrategy::DefaultAwsAuth => BTreeMap::default(),
+            AuthStrategy::None => {
+                return Ok(self.url.clone());
+            },
         };
 
         if !extra_env.is_empty() {

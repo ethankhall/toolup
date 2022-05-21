@@ -48,10 +48,17 @@ impl SubCommandExec<AddRemoteError> for AddRemoteLocalSubCommand {
 #[async_trait]
 impl SubCommandExec<AddRemoteError> for AddRemoteS3SubCommand {
     async fn execute(self, global_folder: &GlobalFolders) -> Result<(), AddRemoteError> {
-        let auth_strategy = match self.auth_script {
-            Some(path) => AuthStrategy::Script(AuthScript { script_path: path }),
-            None => AuthStrategy::None,
+
+        let auth_strategy = match self.auth {
+            S3AuthType::Anonymous => AuthStrategy::None,
+            S3AuthType::Host => {
+                match self.auth_script {
+                    Some(path) => AuthStrategy::Script(AuthScript { script_path: path }),
+                    None => AuthStrategy::DefaultAwsAuth,
+                }
+            }
         };
+
         let s3_package = S3PackageRepository {
             url: self.url.clone(),
             auth_strategy,

@@ -60,7 +60,7 @@ fn configure_logging(
         .with_writer(non_blocking);
 
     let console_output = tracing_subscriber::fmt::layer()
-        .event_format(Format::default().pretty())
+        .event_format(Format::default().compact())
         .fmt_fields(PrettyFields::new())
         .with_target(false);
 

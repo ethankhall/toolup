@@ -1,6 +1,8 @@
 # Toolup
 
-Toolup is a CLI that can be used to manage different CLI's.
+`toolup` is a CLI that can be used to manage different CLI's.
+`toolup` is not intended to replace a normal package manager, instead allow organizations to install versioned applications.
+The major usecase for `toolup` is to deploy versions to a machine, and when there is a bug that effects only a small number of users, that user will be able to roll back to an older version locally without requireing other tooling to change.
 
 ## Install
 
@@ -17,7 +19,14 @@ export PATH=`$HOME/.toolup/bin/`:$PATH
 
 This will ensure that the binaries that get added will be on your path.
 
-## Config
+## User Operations
+
+Assuming that someone else (and IT department) manages the config files, the user will only need to run `toolup remote update`. This will update their local applications based on the provided config.
+
+
+## Management
+
+### Config
 
 In general, an IT department will be managing config. The config should be placed based
 on the following table.
@@ -35,7 +44,7 @@ that the file is correct. Once it's been created, it is safe to move to other ma
 
 The S3 backed artifacts may have a script to authenticate with S3, if so that file will also need to be located on other machines.
 
-## Packages
+### Packages
 
 Creating a package is easy! Use `toolup package init` and a `package.toml` will be created.
 Inside the `package.toml` update the name and list all the binaries the package provides.

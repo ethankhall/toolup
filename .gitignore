@@ -21,3 +21,4 @@ Cargo.lock
 /tmp
 !Cargo.lock
 tmp
+.DS_Store

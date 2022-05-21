@@ -219,3 +219,7 @@ fn validate_extract() {
     assert_eq!("bar", extracted.get("foo").unwrap());
     assert_eq!("foo", extracted.get("bar").unwrap());
 }
+
+pub fn make_package_id(name: &str, version: &str) -> String {
+    format!("urn:package:toolup/{}/{}", name, version)
+}
