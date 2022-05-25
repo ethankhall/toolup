@@ -29,6 +29,9 @@ pub enum SubCommand {
     /// Get config details
     #[clap(subcommand)]
     Config(ConfigSubCommand),
+
+    /// Display version info about toolup
+    Version,
 }
 
 #[derive(Parser, Debug)]

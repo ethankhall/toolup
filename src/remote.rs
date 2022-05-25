@@ -62,6 +62,7 @@ impl RemoteDownload for S3PackageRepository {
     ) -> Result<bool, RemoteError> {
         let etag_string = match etag {
             None => {
+                debug!("No previous etag value, forcing update");
                 return Ok(true);
             }
             Some(value) => value,
@@ -74,6 +75,8 @@ impl RemoteDownload for S3PackageRepository {
             .header("If-None-Match", etag_string)
             .send()
             .await;
+
+        debug!("Head response {:?}", response);
 
         let status_code = match response {
             Err(err) => err.status(),
@@ -94,11 +97,17 @@ impl RemoteDownload for S3PackageRepository {
         let signed_url = self.make_presigned_url("GET").await?;
         let response = reqwest::get(signed_url).await?;
         let headers = response.headers();
-        let etag = headers
-            .get(ETAG)
-            .map(|etag| etag.to_str().ok())
-            .flatten()
-            .map(|etag| etag.to_owned());
+        let etag: Option<String> = match headers.get(ETAG) {
+                Some(value) => {
+                    match value.to_str() {
+                        Ok(value) => {
+                            Some(String::from(value))
+                        },
+                        Err(_) => None
+                    }
+                },
+                None => None,
+            };
         let bytes = response.bytes().await?;
 
         let now = chrono::Utc::now();

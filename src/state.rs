@@ -9,6 +9,7 @@ use std::path::Path;
 use std::process::id;
 use thiserror::Error;
 use tracing::{debug, error};
+use tracing::field::debug as tracing_wrap;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
@@ -57,6 +58,10 @@ impl StateContainer {
         self.current_state.installed_packages.values().map(|x| self.current_state.describe_package(x)).collect()
     }
 
+    pub fn describe_package(&self, name: &str) -> Option<PackageDescription> {
+        self.current_state.current_packages.get(name).map(|x| self.current_state.describe_package(x))
+    }
+
     pub fn remove_packages(&mut self, packages_to_remove: Vec<PackageDescription>) {
         for package in packages_to_remove {
             self.current_state.remove_package_by_id(&package.package_id);
@@ -81,7 +86,7 @@ pub async fn get_current_state(state_path: &Path) -> Result<StateContainer, Stat
     debug!("Reading state from {:?}", state_path);
     let global_state: GlobalInstalledState = serde_json::from_reader(File::open(state_path)?)?;
 
-    debug!("Parsed state is {:?}", global_state);
+    debug!(global_state=tracing_wrap(&global_state));
 
     // future, we woul update state file here.
     let VersionedGlobalState::V1(state) = global_state.state;
@@ -244,11 +249,13 @@ pub async fn update_links(
     Ok(())
 }
 
+#[derive(Debug)]
 pub struct PackageDescription {
     pub name: String,
     pub version: String,
     pub binaries: BTreeMap<String, bool>,
     pub remote_name: Option<String>,
+    pub etag: Option<String>,
     pub package_id: String,
 }
 
@@ -374,6 +381,7 @@ mod v1 {
                 binaries: binaries_installed,
                 remote_name: package.remote_name.clone(),
                 package_id: package.id.clone(),
+                etag: package.etag.clone(),
             }
         }
 

@@ -2,7 +2,7 @@ use std::default::Default;
 
 use anyhow::Result as AnyResult;
 use clap::Parser;
-use tracing::{debug, error};
+use tracing::{info, error};
 use tracing_subscriber::{filter::filter_fn, prelude::*};
 use tracing_subscriber::{
     fmt::format::{Format, JsonFields, PrettyFields},
@@ -22,7 +22,7 @@ async fn main() -> AnyResult<()> {
 
     let _gaurd = configure_logging(&opt.logging_opts, &global_folder);
 
-    debug!("Starting Execution");
+    info!(version = clap::crate_version!(), "Starting Execution");
 
     let result = run_command(opt, &global_folder).await;
 
@@ -41,6 +41,7 @@ async fn run_command(opts: Opts, global_folder: &GlobalFolders) -> Result<(), Co
         SubCommand::Exec(args) => handle_exec(args, global_folder).await?,
         SubCommand::Remote(args) => handle_remote(args, global_folder).await?,
         SubCommand::Config(args) => handle_config(args, global_folder).await?,
+        SubCommand::Version => print_version()
     };
 
     Ok(result)

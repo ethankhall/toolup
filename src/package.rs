@@ -38,10 +38,13 @@ pub async fn install_package(
     overwrite: bool,
     global_folder: &GlobalFolders,
 ) -> Result<(), PackageError> {
+    debug!("Installing package");
     let tool_root_dir = global_folder.tool_root_dir.clone();
     let tool_root_dir = Path::new(&tool_root_dir);
     let tmp_extract_dir = tool_root_dir.join(format!("tmp.{}", chrono::Utc::now().timestamp()));
     let package_def = extract_and_validate(&local_artifact.path, &tmp_extract_dir).await?;
+
+    debug!("Package definition {:?}", package_def);
 
     let real_path =
         move_package_to_correct_location(&tmp_extract_dir, tool_root_dir, &package_def, overwrite)
@@ -55,6 +58,9 @@ pub async fn install_package(
         remote_name: None,
         etag: local_artifact.etag.clone(),
     };
+
+    debug!("Installed package is {:?}", install_container);
+
     container
         .current_state
         .add_installed_package(&install_container);
@@ -112,6 +118,8 @@ async fn extract_and_validate(
     for (filename, hash) in &archive_def.file_hashes {
         valdiate_file(temp_dir.join(filename), hash).await?;
     }
+
+    debug!("Package {:?} is valid, installing", &package_file);
 
     for rel_path in archive_def.entrypoints.values() {
         set_executable(&temp_dir.join(rel_path));

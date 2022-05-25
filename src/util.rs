@@ -78,8 +78,8 @@ pub fn default_toolup_dir() -> String {
 
 pub fn default_config_dir() -> String {
     let mut config_dir = dirs::home_dir().expect("To be able to get user's home directory");
-    config_dir.push(".config");
-    config_dir.push("toolup");
+    config_dir.push(".toolup");
+    config_dir.push("config");
     config_dir.display().to_string()
 }
 
