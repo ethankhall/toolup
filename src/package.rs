@@ -7,6 +7,7 @@ use thiserror::Error;
 use tracing::{debug, info, instrument};
 
 use crate::model::{GeneratedDefinedPackage, InstalledPackageContainer, GENERATED_FILE_NAME};
+use crate::remote::DownloadedArtifact;
 use crate::state::{get_current_state, write_state};
 use crate::util::{get_hash_for_contents, set_executable, GlobalFolders};
 
@@ -33,14 +34,17 @@ pub enum PackageError {
 }
 
 pub async fn install_package(
-    package_path: &Path,
+    local_artifact: &DownloadedArtifact,
     overwrite: bool,
     global_folder: &GlobalFolders,
 ) -> Result<(), PackageError> {
+    debug!("Installing package");
     let tool_root_dir = global_folder.tool_root_dir.clone();
     let tool_root_dir = Path::new(&tool_root_dir);
     let tmp_extract_dir = tool_root_dir.join(format!("tmp.{}", chrono::Utc::now().timestamp()));
-    let package_def = extract_and_validate(package_path, &tmp_extract_dir).await?;
+    let package_def = extract_and_validate(&local_artifact.path, &tmp_extract_dir).await?;
+
+    debug!("Package definition {:?}", package_def);
 
     let real_path =
         move_package_to_correct_location(&tmp_extract_dir, tool_root_dir, &package_def, overwrite)
@@ -52,7 +56,11 @@ pub async fn install_package(
         package: package_def,
         path_to_root: real_path,
         remote_name: None,
+        etag: local_artifact.etag.clone(),
     };
+
+    debug!("Installed package is {:?}", install_container);
+
     container
         .current_state
         .add_installed_package(&install_container);
@@ -111,6 +119,8 @@ async fn extract_and_validate(
         valdiate_file(temp_dir.join(filename), hash).await?;
     }
 
+    debug!("Package {:?} is valid, installing", &package_file);
+
     for rel_path in archive_def.entrypoints.values() {
         set_executable(&temp_dir.join(rel_path));
     }
@@ -127,6 +137,7 @@ async fn move_package_to_correct_location(
     let unix_friendly_name = package.name.replace(' ', "_");
     let real_dest = tool_root
         .to_owned()
+        .join("packages")
         .join(&unix_friendly_name)
         .join(&package.version);
 

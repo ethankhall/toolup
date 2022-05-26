@@ -20,3 +20,5 @@ Cargo.lock
 *.tar.gz
 /tmp
 !Cargo.lock
+tmp
+.DS_Store

@@ -33,16 +33,14 @@ impl SubCommandExec<DeleteRemoteError> for DeleteRemoteSubCommand {
         if self.cascade {
             let global_state = global_folder.global_state_file();
             let mut container = get_current_state(&global_state).await?;
-            let mut current_state = container.current_state;
             let mut packages_to_remove = Vec::new();
-            for package in &current_state.installed_packages {
+            for package in container.list_installed_packages() {
                 if package.remote_name == Some(self.name.clone()) {
-                    packages_to_remove.push(package.clone());
+                    packages_to_remove.push(package);
                 }
             }
 
-            current_state.remove_packages(packages_to_remove);
-            container.current_state = current_state;
+            container.remove_packages(packages_to_remove);
             write_state(&global_state, container).await?;
         }
         Ok(())

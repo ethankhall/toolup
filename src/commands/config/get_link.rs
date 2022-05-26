@@ -18,7 +18,7 @@ pub enum GetLinkPackageError {
 #[async_trait]
 impl SubCommandExec<GetLinkPackageError> for GetPathSubCommand {
     async fn execute(self, global_folder: &GlobalFolders) -> Result<(), GetLinkPackageError> {
-        println!("{}", global_folder.get_link_dir().display().to_string());
+        println!("{}", global_folder.get_link_dir().display());
         Ok(())
     }
 }

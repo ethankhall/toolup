@@ -104,6 +104,8 @@ impl SubCommandExec<ArchivePackageError> for ArchiveToolSubCommand {
         ));
 
         let archive = create_archive(entrypoint_paths, &definition, files_to_package).await?;
+
+        debug!("Compressing files");
         let mut e = GzEncoder::new(File::create(&archive_path)?, Compression::default());
         e.write_all(&archive)?;
         e.finish()?;

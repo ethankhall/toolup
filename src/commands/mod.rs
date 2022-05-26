@@ -6,11 +6,13 @@ mod config;
 mod exec;
 mod package;
 mod remote;
+mod version;
 
 pub use config::prelude::*;
 pub use exec::prelude::*;
 pub use package::prelude::*;
 pub use remote::prelude::*;
+pub use version::print_version;
 
 #[derive(Error, Debug)]
 pub enum CommandError {

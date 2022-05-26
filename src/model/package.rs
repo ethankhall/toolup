@@ -23,4 +23,25 @@ pub struct InstalledPackageContainer {
     pub package: GeneratedDefinedPackage,
     pub path_to_root: String,
     pub remote_name: Option<String>,
+    pub etag: Option<String>,
+}
+
+pub trait GenericPackage {
+    fn name(&self) -> String;
+    fn version(&self) -> String;
+    fn id(&self) -> String;
+}
+
+impl GenericPackage for GeneratedDefinedPackage {
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn version(&self) -> String {
+        self.version.clone()
+    }
+
+    fn id(&self) -> String {
+        crate::util::make_package_id(&self.name, &self.version)
+    }
 }
