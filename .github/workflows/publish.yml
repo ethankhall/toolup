@@ -21,7 +21,7 @@ jobs:
     needs:
       - release-version
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: Install latest nightly
         uses: actions-rs/toolchain@v1
         with:
@@ -36,17 +36,19 @@ jobs:
           command: build
           args: --release
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v2
-        path: |
-          target/release/toolup
-          target/release/toolup-shim
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-artifacts
+          path: |
+            target/release/toolup
+            target/release/toolup-shim
 
   build-mac:
     runs-on: macos-latest
     needs:
       - release-version
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: Install latest nightly
         uses: actions-rs/toolchain@v1
         with:
@@ -62,10 +64,12 @@ jobs:
           command: build
           args: --release
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v2
-        path: |
-          target/release/toolup
-          target/release/toolup-shim
+        uses: actions/upload-artifact@v3
+        with:
+          name: mac-artifacts
+          path: |
+            target/release/toolup
+            target/release/toolup-shim
 
   release:
     runs-on: ubuntu-latest
@@ -73,12 +77,12 @@ jobs:
       - build-linux
       - build-mac
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/download-artifact@v1
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v3
         with:
           name: mac-artifacts
           path: artifacts/mac
-      - uses: actions/download-artifact@v1
+      - uses: actions/download-artifact@v3
         with:
           name: linux-artifacts
           path: artifacts/linux
