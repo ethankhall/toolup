@@ -430,8 +430,7 @@ mod v1 {
             let package = InstalledPackage::from(container);
             debug!("Adding {:?}.", &package);
 
-            self.installed_packages
-                .insert(package.id.clone(), package);
+            self.installed_packages.insert(package.id.clone(), package);
             for (binary_name, relative_path) in &container.package.entrypoints {
                 let binary_path = Path::new(&container.path_to_root)
                     .join(relative_path)

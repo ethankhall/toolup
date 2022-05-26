@@ -187,10 +187,7 @@ impl RemoteDownload for LocalPackageRepository {
         let path = PathBuf::from(&self.path);
 
         info!("Artifact from to {}", self.path);
-        Ok(DownloadedArtifact {
-            path,
-            etag: None,
-        })
+        Ok(DownloadedArtifact { path, etag: None })
     }
 }
 
