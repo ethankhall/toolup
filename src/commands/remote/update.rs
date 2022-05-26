@@ -1,6 +1,6 @@
 use crate::cli::*;
 use crate::commands::SubCommandExec;
-use crate::model::{RemotePackage};
+use crate::model::RemotePackage;
 use crate::package::{install_package, PackageError};
 use crate::remote::{package_needs_update, update_remote};
 use crate::state::{get_current_state, update_links, PackageDescription};
@@ -25,7 +25,7 @@ pub enum UpdateRemoteError {
     #[error(transparent)]
     Unkown(#[from] anyhow::Error),
     #[error("Application has not been configured")]
-    NoGlobalStateFile
+    NoGlobalStateFile,
 }
 
 #[async_trait]
@@ -60,11 +60,14 @@ impl SubCommandExec<UpdateRemoteError> for UpdateRemoteSubCommand {
 }
 
 #[instrument(skip_all, fields(packge=%remote_package.name))]
-async fn update_package(remote_package: RemotePackage, installed_package: Option<PackageDescription>, global_folder: &GlobalFolders) -> Result<(), UpdateRemoteError>{
+async fn update_package(
+    remote_package: RemotePackage,
+    installed_package: Option<PackageDescription>,
+    global_folder: &GlobalFolders,
+) -> Result<(), UpdateRemoteError> {
     info!(target: "user", "Updating {}", remote_package.name);
     debug!(remote_package=?remote_package, installed_package=?installed_package);
-    let etag = match installed_package
-    {
+    let etag = match installed_package {
         None => None,
         Some(pacakge) => pacakge.etag.clone(),
     };

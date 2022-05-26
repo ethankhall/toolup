@@ -3,7 +3,6 @@ mod delete;
 mod list;
 mod update;
 
-use tracing::debug;
 use crate::cli::RemoteSubCommand;
 use crate::commands::SubCommandExec;
 use crate::util::GlobalFolders;
@@ -11,6 +10,7 @@ use add::AddRemoteError;
 use delete::DeleteRemoteError;
 use list::ListRemoteError;
 use thiserror::Error;
+use tracing::debug;
 use update::UpdateRemoteError;
 
 pub mod prelude {

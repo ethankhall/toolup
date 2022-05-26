@@ -34,13 +34,13 @@ impl SubCommandExec<ListRemoteError> for ListRemoteSubCommand {
         }
 
         let mut remote_configs: Vec<DirEntry> = Default::default();
-        
+
         for entry in fs::read_dir(&remote_folder)? {
             if let Ok(value) = entry {
                 remote_configs.push(value);
             }
         }
-        
+
         if remote_configs.len() == 0 {
             info!(target: "user", "No remote configurations exist in {}", remote_folder.display());
         }

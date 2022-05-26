@@ -2,7 +2,7 @@ use std::default::Default;
 
 use anyhow::Result as AnyResult;
 use clap::Parser;
-use tracing::{info, error};
+use tracing::{error, info};
 use tracing_subscriber::{filter::filter_fn, prelude::*};
 use tracing_subscriber::{
     fmt::format::{Format, JsonFields, PrettyFields},
@@ -41,7 +41,7 @@ async fn run_command(opts: Opts, global_folder: &GlobalFolders) -> Result<(), Co
         SubCommand::Exec(args) => handle_exec(args, global_folder).await?,
         SubCommand::Remote(args) => handle_remote(args, global_folder).await?,
         SubCommand::Config(args) => handle_config(args, global_folder).await?,
-        SubCommand::Version => print_version()
+        SubCommand::Version => print_version(),
     };
 
     Ok(result)

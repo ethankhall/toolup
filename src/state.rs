@@ -8,8 +8,8 @@ use std::io::Write;
 use std::path::Path;
 use std::process::id;
 use thiserror::Error;
-use tracing::{debug, error};
 use tracing::field::debug as tracing_wrap;
+use tracing::{debug, error};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
@@ -55,11 +55,18 @@ pub struct StateContainer {
 
 impl StateContainer {
     pub fn list_installed_packages(&self) -> Vec<PackageDescription> {
-        self.current_state.installed_packages.values().map(|x| self.current_state.describe_package(x)).collect()
+        self.current_state
+            .installed_packages
+            .values()
+            .map(|x| self.current_state.describe_package(x))
+            .collect()
     }
 
     pub fn describe_package(&self, name: &str) -> Option<PackageDescription> {
-        self.current_state.current_packages.get(name).map(|x| self.current_state.describe_package(x))
+        self.current_state
+            .current_packages
+            .get(name)
+            .map(|x| self.current_state.describe_package(x))
     }
 
     pub fn remove_packages(&mut self, packages_to_remove: Vec<PackageDescription>) {
@@ -86,7 +93,7 @@ pub async fn get_current_state(state_path: &Path) -> Result<StateContainer, Stat
     debug!("Reading state from {:?}", state_path);
     let global_state: GlobalInstalledState = serde_json::from_reader(File::open(state_path)?)?;
 
-    debug!(global_state=tracing_wrap(&global_state));
+    debug!(global_state = tracing_wrap(&global_state));
 
     // future, we woul update state file here.
     let VersionedGlobalState::V1(state) = global_state.state;
@@ -264,7 +271,7 @@ mod v1 {
     use crate::model::{GenericPackage, InstalledPackageContainer};
     use derivative::Derivative;
     use serde::{Deserialize, Serialize};
-    use std::collections::{BTreeMap};
+    use std::collections::BTreeMap;
     use std::hash::{Hash, Hasher};
     use std::path::Path;
     use tracing::{debug, warn};
@@ -286,11 +293,11 @@ mod v1 {
         fn name(&self) -> String {
             self.name.clone()
         }
-    
+
         fn version(&self) -> String {
             self.version.clone()
         }
-    
+
         fn id(&self) -> String {
             self.id.clone()
         }
@@ -306,7 +313,10 @@ mod v1 {
     impl From<&InstalledPackageContainer> for InstalledPackage {
         fn from(container: &InstalledPackageContainer) -> Self {
             Self {
-                id: crate::util::make_package_id(&container.package.name, &container.package.version),
+                id: crate::util::make_package_id(
+                    &container.package.name,
+                    &container.package.version,
+                ),
                 name: container.package.name.clone(),
                 version: container.package.version.clone(),
                 package_dir: container.path_to_root.clone(),
@@ -329,9 +339,17 @@ mod v1 {
     }
 
     impl InstalledBinary {
-        fn new<P>(package: &P, binary_name: String, path: String) -> Self where P: GenericPackage {
+        fn new<P>(package: &P, binary_name: String, path: String) -> Self
+        where
+            P: GenericPackage,
+        {
             InstalledBinary {
-                id: format!("urn:package:toolup/{}/{}/{}", package.name(), package.version(), binary_name.to_string()),
+                id: format!(
+                    "urn:package:toolup/{}/{}/{}",
+                    package.name(),
+                    package.version(),
+                    binary_name.to_string()
+                ),
                 name: binary_name.to_string(),
                 version: package.version(),
                 path_to_exec: path,
@@ -421,13 +439,15 @@ mod v1 {
             let package = InstalledPackage::from(container);
             debug!("Adding {:?}.", &package);
 
-            self.installed_packages.insert(package.id.clone(), package.clone());
+            self.installed_packages
+                .insert(package.id.clone(), package.clone());
             for (binary_name, relative_path) in &container.package.entrypoints {
                 let binary_path = Path::new(&container.path_to_root)
-                        .join(relative_path)
-                        .display()
-                        .to_string();
-                let binary = InstalledBinary::new(&container.package, binary_name.to_string(), binary_path);
+                    .join(relative_path)
+                    .display()
+                    .to_string();
+                let binary =
+                    InstalledBinary::new(&container.package, binary_name.to_string(), binary_path);
 
                 debug!("Adding binary {:?}", binary);
 
@@ -453,7 +473,6 @@ mod v1 {
             let package_to_remove = self.current_packages.get(&package.name);
 
             if let Some(package_to_remove) = package_to_remove {
-
                 let mut binary_names_to_remove = Vec::new();
                 for (name, binary) in &self.current_binaries {
                     if binary.package_id == package_to_remove.id {

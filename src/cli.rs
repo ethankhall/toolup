@@ -1,4 +1,4 @@
-use clap::{ArgGroup, ColorChoice, Parser, ArgEnum};
+use clap::{ArgEnum, ArgGroup, ColorChoice, Parser};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, color = ColorChoice::Always)]

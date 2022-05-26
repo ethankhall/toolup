@@ -98,16 +98,12 @@ impl RemoteDownload for S3PackageRepository {
         let response = reqwest::get(signed_url).await?;
         let headers = response.headers();
         let etag: Option<String> = match headers.get(ETAG) {
-                Some(value) => {
-                    match value.to_str() {
-                        Ok(value) => {
-                            Some(String::from(value))
-                        },
-                        Err(_) => None
-                    }
-                },
-                None => None,
-            };
+            Some(value) => match value.to_str() {
+                Ok(value) => Some(String::from(value)),
+                Err(_) => None,
+            },
+            None => None,
+        };
         let bytes = response.bytes().await?;
 
         let now = chrono::Utc::now();
@@ -136,7 +132,7 @@ impl S3PackageRepository {
             AuthStrategy::DefaultAwsAuth => BTreeMap::default(),
             AuthStrategy::None => {
                 return Ok(self.url.clone());
-            },
+            }
         };
 
         if !extra_env.is_empty() {

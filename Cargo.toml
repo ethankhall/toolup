@@ -52,5 +52,5 @@ uuid = { version = "1", features = [ "v4", "fast-rng" ] }
 nix = "0.13"
 
 [build-dependencies]
-vergen = "6"
+vergen = "7"
 anyhow = "1.0"
