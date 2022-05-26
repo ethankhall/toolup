@@ -47,7 +47,7 @@ pub enum StateError {
     UknownError(#[from] anyhow::Error),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct StateContainer {
     pub updated_at: Option<DateTime<Utc>>,
     pub current_state: v1::InstalledState,
@@ -72,15 +72,6 @@ impl StateContainer {
     pub fn remove_packages(&mut self, packages_to_remove: Vec<PackageDescription>) {
         for package in packages_to_remove {
             self.current_state.remove_package_by_id(&package.package_id);
-        }
-    }
-}
-
-impl Default for StateContainer {
-    fn default() -> Self {
-        Self {
-            updated_at: None,
-            current_state: Default::default(),
         }
     }
 }
@@ -348,9 +339,9 @@ mod v1 {
                     "urn:package:toolup/{}/{}/{}",
                     package.name(),
                     package.version(),
-                    binary_name.to_string()
+                    binary_name,
                 ),
-                name: binary_name.to_string(),
+                name: binary_name,
                 version: package.version(),
                 path_to_exec: path,
                 package_id: package.id(),
@@ -366,7 +357,7 @@ mod v1 {
         }
     }
 
-    #[derive(Serialize, Deserialize, Debug, Clone)]
+    #[derive(Serialize, Deserialize, Debug, Clone, Default)]
     #[serde(rename_all = "kebab-case")]
     pub struct InstalledState {
         pub installed_packages: BTreeMap<String, InstalledPackage>,
@@ -379,7 +370,7 @@ mod v1 {
     impl InstalledState {
         pub fn describe_package(&self, package: &InstalledPackage) -> super::PackageDescription {
             let mut binaries_installed = BTreeMap::new();
-            for (_binary_id, binary) in &self.installed_binaries {
+            for binary in self.installed_binaries.values() {
                 if binary.package_id == package.id {
                     binaries_installed.insert(binary.name.clone(), false);
                 }
@@ -440,7 +431,7 @@ mod v1 {
             debug!("Adding {:?}.", &package);
 
             self.installed_packages
-                .insert(package.id.clone(), package.clone());
+                .insert(package.id.clone(), package);
             for (binary_name, relative_path) in &container.package.entrypoints {
                 let binary_path = Path::new(&container.path_to_root)
                     .join(relative_path)
@@ -485,7 +476,7 @@ mod v1 {
                 }
             }
 
-            for (_binary_id, binary) in &self.installed_binaries {
+            for binary in self.installed_binaries.values() {
                 if binary.package_id == package.id {
                     let existing = self
                         .current_binaries
@@ -526,7 +517,7 @@ mod v1 {
         }
 
         pub fn get_binary_path(&self, name: &str, version: &str) -> Result<String, StateError> {
-            for (_binary_id, binary) in &self.installed_binaries {
+            for binary in self.installed_binaries.values() {
                 if binary.name == name && binary.version == version {
                     return Ok(binary.path_to_exec.clone());
                 }
@@ -535,17 +526,6 @@ mod v1 {
                 name: name.to_string(),
                 version: version.to_string(),
             })
-        }
-    }
-
-    impl Default for InstalledState {
-        fn default() -> Self {
-            Self {
-                installed_binaries: Default::default(),
-                installed_packages: Default::default(),
-                current_binaries: Default::default(),
-                current_packages: Default::default(),
-            }
         }
     }
 

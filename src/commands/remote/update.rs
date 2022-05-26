@@ -69,7 +69,7 @@ async fn update_package(
     debug!(remote_package=?remote_package, installed_package=?installed_package);
     let etag = match installed_package {
         None => None,
-        Some(pacakge) => pacakge.etag.clone(),
+        Some(pacakge) => pacakge.etag,
     };
 
     if package_needs_update(&remote_package, etag).await? {

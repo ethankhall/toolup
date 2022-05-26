@@ -75,7 +75,7 @@ fn add_remote_package(
     global_folder: &GlobalFolders,
 ) -> Result<(), AddRemoteError> {
     let pretty_json = serde_json::to_string_pretty(&package)?;
-    let config_file = global_folder.make_remote_tool_config(&name);
+    let config_file = global_folder.make_remote_tool_config(name);
     let parent = config_file
         .parent()
         .expect("Should be able to find config dir.");

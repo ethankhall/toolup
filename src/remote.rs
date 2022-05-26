@@ -188,7 +188,7 @@ impl RemoteDownload for LocalPackageRepository {
 
         info!("Artifact from to {}", self.path);
         Ok(DownloadedArtifact {
-            path: path.clone(),
+            path,
             etag: None,
         })
     }
@@ -209,7 +209,7 @@ pub async fn package_needs_update(
     etag: Option<String>,
 ) -> Result<bool, RemoteError> {
     match &remote.repository {
-        PackageRepository::S3(s3) => s3.needs_update(&remote, etag).await,
-        PackageRepository::Local(local) => local.needs_update(&remote, etag).await,
+        PackageRepository::S3(s3) => s3.needs_update(remote, etag).await,
+        PackageRepository::Local(local) => local.needs_update(remote, etag).await,
     }
 }
