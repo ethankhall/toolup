@@ -90,4 +90,5 @@ jobs:
         run: docker login docker.pkg.github.com --username ethankhall --password ${{ secrets.GITHUB_TOKEN }}
       - name: Create release
         run: |
+          ls artifacts/linux
           docker run --rm -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} -v $(pwd):/target docker.pkg.github.com/ethankhall/crom/cli:latest upload-artifacts latest --artifact-path=./artifacts linux mac
