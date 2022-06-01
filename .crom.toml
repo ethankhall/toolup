@@ -1,13 +1,13 @@
-pattern = 'v0.1.%d'
+pattern = 'v0.2.%d'
 types = ["Cargo"]
 message-template = "Created {version} for release."
 
 [artifact.mac]
-paths = {toolup = "artifacts/mac/toolup", toolup-shim = "artifacts/mac/toolup-shim"}
+paths = {toolup = "mac/toolup", toolup-shim = "mac/toolup-shim"}
 compress = { name = "toolup-mac.tar.gz", format = "tgz" }
 target = "GitHub"
 
 [artifact.linux]
-paths = {toolup = "artifacts/linux/toolup", toolup-shim = "artifacts/linux/toolup-shim"}
+paths = {toolup = "linux/toolup", toolup-shim = "linux/toolup-shim"}
 compress = { name = "toolup-linux.tar.gz", format = "tgz" }
 target = "GitHub"
