@@ -22,6 +22,27 @@ pub struct GlobalFolders {
 }
 
 impl GlobalFolders {
+
+    pub fn new(override_tool_root_dir: Option<String>, override_config_dir: Option<String>) -> Self {
+        let log_dir = default_log_dir();
+
+        let tool_root_dir = match override_tool_root_dir {
+            Some(dir) => dir,
+            None => default_toolup_dir(),
+        };
+
+        let config_dir = match override_config_dir {
+            Some(dir) => dir,
+            None => default_config_dir(),
+        };
+
+        Self {
+            log_dir,
+            config_dir,
+            tool_root_dir,
+        }
+    }
+
     pub fn global_state_file(&self) -> PathBuf {
         Path::new(&self.config_dir).join(GLOBAL_STATE_FILE_NAME)
     }
@@ -43,23 +64,7 @@ impl GlobalFolders {
     }
 
     pub fn shim_from_env() -> Self {
-        let log_dir = default_log_dir();
-
-        let tool_root_dir = match std::env::var(TOOLUP_ROOT_TOOL_DIR) {
-            Ok(config_dir) => config_dir,
-            Err(_) => default_toolup_dir(),
-        };
-
-        let config_dir = match std::env::var(TOOLUP_GLOBAL_CONFIG_DIR) {
-            Ok(config_dir) => config_dir,
-            Err(_) => default_config_dir(),
-        };
-
-        Self {
-            log_dir,
-            config_dir,
-            tool_root_dir,
-        }
+        Self::new(std::env::var(TOOLUP_ROOT_TOOL_DIR).ok(), std::env::var(TOOLUP_GLOBAL_CONFIG_DIR).ok())
     }
 }
 
@@ -85,23 +90,7 @@ pub fn default_config_dir() -> String {
 
 impl From<&GlobalConfig> for GlobalFolders {
     fn from(cli: &GlobalConfig) -> Self {
-        let log_dir = default_log_dir();
-
-        let tool_root_dir = match &cli.tool_root_dir {
-            Some(config_dir) => config_dir.to_string(),
-            None => default_toolup_dir(),
-        };
-
-        let config_dir = match &cli.config_dir {
-            Some(config_dir) => config_dir.to_string(),
-            None => default_config_dir(),
-        };
-
-        Self {
-            log_dir,
-            config_dir,
-            tool_root_dir,
-        }
+        Self::new(cli.tool_root_dir.clone(), cli.config_dir.clone())
     }
 }
 
@@ -164,12 +153,17 @@ pub fn set_executable(path: &Path) {
 pub fn set_executable(_path: &PathBuf) {}
 
 #[cfg(target_family = "unix")]
-pub fn exec(path: String, args: Vec<String>) {
+pub fn exec(exe_path: String, args: Vec<String>) {
     use std::ffi::CString;
 
-    let path = CString::new(path).unwrap();
-    let argv: Vec<CString> = args.into_iter().map(|x| CString::new(x).unwrap()).collect();
-    nix::unistd::execv(&path, argv.as_slice()).unwrap();
+    // arg[0] needs to be the exec
+    let mut nix_args = Vec::new();
+    nix_args.push(exe_path.clone());
+    nix_args.extend(args);
+
+    let exe_path = CString::new(exe_path).unwrap();
+    let argv: Vec<CString> = nix_args.into_iter().map(|x| CString::new(x).unwrap()).collect();
+    nix::unistd::execv(&exe_path, argv.as_slice()).unwrap();
 }
 
 #[cfg(target_family = "windows")]
