@@ -9,7 +9,9 @@ jobs:
   release-version:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: login to registry
         run: docker login docker.pkg.github.com --username ethankhall --password ${{ secrets.GITHUB_TOKEN }}
       - name: create-release
@@ -21,7 +23,9 @@ jobs:
     needs:
       - release-version
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Install latest nightly
         uses: actions-rs/toolchain@v1
         with:
@@ -48,7 +52,9 @@ jobs:
     needs:
       - release-version
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Install latest nightly
         uses: actions-rs/toolchain@v1
         with:
@@ -77,7 +83,9 @@ jobs:
       - build-linux
       - build-mac
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v3
         with:
           name: mac-artifacts
@@ -90,5 +98,5 @@ jobs:
         run: docker login docker.pkg.github.com --username ethankhall --password ${{ secrets.GITHUB_TOKEN }}
       - name: Create release
         run: |
-          ls artifacts/linux
-          docker run --rm -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} -v $(pwd):/target docker.pkg.github.com/ethankhall/crom/cli:latest -vvv upload-artifacts latest --artifact-path=./artifacts linux mac
+          docker run --rm -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} -v $(pwd):/target docker.pkg.github.com/ethankhall/crom/cli:latest get latest
+          docker run --rm -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} -v $(pwd):/target docker.pkg.github.com/ethankhall/crom/cli:latest upload-artifacts latest --artifact-path=./artifacts linux mac
