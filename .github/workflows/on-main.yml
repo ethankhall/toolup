@@ -1,11 +1,12 @@
-on: [pull_request]
+on:
+  push:
+    branches:
+    - main
 
-name: Continuous integration
+name: Release
 
 jobs:
   create-release:
-    needs:
-      - check
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -15,11 +16,11 @@ jobs:
           fetch-depth: 0
       - name: login to registry
         run: docker login docker.pkg.github.com --username ethankhall --password ${{ secrets.GITHUB_TOKEN }}
-      - name: create pre-release
+      - name: create release
         id: version
         run: |
-          VERSION=$(docker run --rm -v $(pwd):/target docker.pkg.github.com/ethankhall/crom/cli:latest get pre-release)
-          docker run --rm -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} -v $(pwd):/target docker.pkg.github.com/ethankhall/crom/cli:latest tag pre-release --local --github
+          VERSION=$(docker run --rm -v $(pwd):/target docker.pkg.github.com/ethankhall/crom/cli:latest get next-release)
+          docker run --rm -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} -v $(pwd):/target docker.pkg.github.com/ethankhall/crom/cli:latest tag next-release --local --github
           echo "::set-output name=version::$VERSION"
 
   publish:
