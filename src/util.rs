@@ -162,8 +162,7 @@ pub fn exec(exe_path: String, args: Vec<String>) {
     use std::ffi::CString;
 
     // arg[0] needs to be the exec
-    let mut nix_args = Vec::new();
-    nix_args.push(exe_path.clone());
+    let mut nix_args = vec![exe_path.clone()];
     nix_args.extend(args);
 
     let exe_path = CString::new(exe_path).unwrap();
@@ -193,12 +192,12 @@ pub fn extract_env_from_script(
     use std::io::BufRead;
     let mut extracted = BTreeMap::new();
 
-    let mut command = Command::new(script.script_path.to_string());
+    let mut command = Command::new(&script.script_path);
     let output = command.output()?;
 
     for line in output.stdout.lines() {
         let line = line?;
-        match line.replace("export ", "").split_once("=") {
+        match line.replace("export ", "").split_once('=') {
             Some((left, right)) => {
                 extracted.insert(left.to_string(), right.to_string());
             }
