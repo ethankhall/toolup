@@ -22,8 +22,10 @@ pub struct GlobalFolders {
 }
 
 impl GlobalFolders {
-
-    pub fn new(override_tool_root_dir: Option<String>, override_config_dir: Option<String>) -> Self {
+    pub fn new(
+        override_tool_root_dir: Option<String>,
+        override_config_dir: Option<String>,
+    ) -> Self {
         let log_dir = default_log_dir();
 
         let tool_root_dir = match override_tool_root_dir {
@@ -64,7 +66,10 @@ impl GlobalFolders {
     }
 
     pub fn shim_from_env() -> Self {
-        Self::new(std::env::var(TOOLUP_ROOT_TOOL_DIR).ok(), std::env::var(TOOLUP_GLOBAL_CONFIG_DIR).ok())
+        Self::new(
+            std::env::var(TOOLUP_ROOT_TOOL_DIR).ok(),
+            std::env::var(TOOLUP_GLOBAL_CONFIG_DIR).ok(),
+        )
     }
 }
 
@@ -162,7 +167,10 @@ pub fn exec(exe_path: String, args: Vec<String>) {
     nix_args.extend(args);
 
     let exe_path = CString::new(exe_path).unwrap();
-    let argv: Vec<CString> = nix_args.into_iter().map(|x| CString::new(x).unwrap()).collect();
+    let argv: Vec<CString> = nix_args
+        .into_iter()
+        .map(|x| CString::new(x).unwrap())
+        .collect();
     nix::unistd::execv(&exe_path, argv.as_slice()).unwrap();
 }
 
