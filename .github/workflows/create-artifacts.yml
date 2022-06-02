@@ -22,7 +22,10 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-release-
+            ${{ runner.os }}-cargo-
       - name: Install latest nightly
         uses: actions-rs/toolchain@v1
         with:
@@ -63,7 +66,10 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+             ${{ runner.os }}-${{ matrix.target }}-cargo-release-
+             ${{ runner.os }}-${{ matrix.target }}-cargo-
       - name: Install latest nightly
         uses: actions-rs/toolchain@v1
         with:
