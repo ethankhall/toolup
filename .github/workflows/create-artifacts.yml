@@ -104,11 +104,11 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: aarch64-apple-darwin
-          path: artifacts/mac-aarch64
+          path: artifacts/aarch64-apple-darwin
       - uses: actions/download-artifact@v3
         with:
           name: x86_64-apple-darwin
-          path: artifacts/mac-x86_64
+          path: artifacts/x86_64-apple-darwin
       - uses: actions/download-artifact@v3
         with:
           name: linux-artifacts
