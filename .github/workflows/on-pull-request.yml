@@ -3,8 +3,10 @@ on: [pull_request]
 name: Continuous integration
 
 jobs:
-  reusable_workflow_job:
+  create-release:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -17,9 +19,12 @@ jobs:
           VERSION=$(docker run --rm -v $(pwd):/target docker.pkg.github.com/ethankhall/crom/cli:latest get pre-release)
           docker run --rm -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} -v $(pwd):/target docker.pkg.github.com/ethankhall/crom/cli:latest tag pre-release --local --github
           echo "::set-output name=version::$VERSION"
-      - uses: ./.github/workflows/create-artifacts.yml
-        with:
-          version: ${{ steps.version.outputs.version }}
+
+  publish:
+    uses: ./.github/workflows/create-artifacts.yml
+    needs: create-release
+    with:
+      version: ${{ needs.create-release.outputs.version }}
 
   check:
     name: Check
