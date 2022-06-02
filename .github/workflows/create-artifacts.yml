@@ -32,7 +32,7 @@ jobs:
             profile: minimal
       - name: login to registry
         run: docker login docker.pkg.github.com --username ethankhall --password ${{ secrets.GITHUB_TOKEN }}
-      - name: do-build
+      - name: update version
         run: |
           docker run --rm -v $(pwd):/target docker.pkg.github.com/ethankhall/crom/cli:latest write-version custom ${{ inputs.version }}
       - uses: actions-rs/cargo@v1
@@ -74,7 +74,8 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
             profile: minimal
-      - name: do-build
+            target: ${{ matrix.target }}
+      - name: update version
         run: |
           mkdir ~/bin
           curl --location https://github.com/ethankhall/crom/releases/download/v0.3.4/crom-mac.tar.gz | tar -xvz  -C ~/bin
