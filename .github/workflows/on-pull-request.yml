@@ -4,6 +4,11 @@ name: Continuous integration
 
 jobs:
   create-release:
+    needs:
+      - check
+      - clippy
+      - test
+      - fmt
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
