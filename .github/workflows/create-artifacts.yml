@@ -77,7 +77,7 @@ jobs:
       - name: do-build
         run: |
           mkdir ~/bin
-          curl --location https://github.com/ethankhall/crom/releases/download/v0.3.3/crom-mac.tar.gz | tar -xvz  -C ~/bin
+          curl --location https://github.com/ethankhall/crom/releases/download/v0.3.4/crom-mac.tar.gz | tar -xvz  -C ~/bin
           chmod +x ~/bin/crom
           ~/bin/crom write-version custom ${{ inputs.version }}
       - uses: actions-rs/cargo@v1
@@ -117,4 +117,4 @@ jobs:
         run: docker login docker.pkg.github.com --username ethankhall --password ${{ secrets.GITHUB_TOKEN }}
       - name: Create release
         run: |
-          docker run --rm -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} -v $(pwd):/target docker.pkg.github.com/ethankhall/crom/cli:latest upload-artifacts custom --artifact-path=./artifacts linux mac_x86 mac_aarch64 ${{ inputs.version }}
+          docker run --rm -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} -v $(pwd):/target docker.pkg.github.com/ethankhall/crom/cli:latest upload-artifacts custom --artifact-path=./artifacts --version ${{ inputs.version }} linux mac-x86 mac-aarch64

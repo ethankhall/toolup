@@ -2,12 +2,12 @@ pattern = 'v0.2.%d'
 types = ["Cargo"]
 message-template = "Created {version} for release."
 
-[artifact.mac_x86]
+[artifact.mac-x86]
 paths = {toolup = "x86_64-apple-darwin/toolup", toolup-shim = "x86_64-apple-darwin/toolup-shim"}
 compress = { name = "toolup-mac-x86.tar.gz", format = "tgz" }
 target = "GitHub"
 
-[artifact.mac_aarch64]
+[artifact.mac-aarch64]
 paths = {toolup = "aarch64-apple-darwin/toolup", toolup-shim = "aarch64-apple-darwin/toolup-shim"}
 compress = { name = "toolup-mac-aarch64.tar.gz", format = "tgz" }
 target = "GitHub"
