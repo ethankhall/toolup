@@ -75,7 +75,7 @@ jobs:
         with:
             profile: minimal
             target: ${{ matrix.target }}
-            default: true
+            override: true
       - name: update version
         run: |
           mkdir ~/bin
