@@ -88,9 +88,8 @@ jobs:
           echo "$(brew --prefix)/opt/binutils/bin" >> $GITHUB_PATH
       - uses: actions-rs/cargo@v1
         with:
-          use-cross: true
           command: build
-          args: --release --target ${{ matrix.target }}
+          args: --release --target "${{ matrix.target }}"
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
