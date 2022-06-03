@@ -99,7 +99,7 @@ impl SubCommandExec<ArchivePackageError> for ArchiveToolSubCommand {
 
         let archive_path = Path::new(&self.archive_dir).join(format!(
             "{name}-{version}.tar.gz",
-            name = definition.name.replace(" ", "_"),
+            name = definition.name.replace(' ', "_"),
             version = definition.version
         ));
 
