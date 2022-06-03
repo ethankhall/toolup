@@ -84,8 +84,9 @@ jobs:
           ~/bin/crom write-version custom ${{ inputs.version }}
       - uses: actions-rs/cargo@v1
         with:
+          use-cross: true
           command: build
-          args: --release
+          args: --release --target ${{ matrix.target }}
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
