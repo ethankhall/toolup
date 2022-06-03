@@ -54,7 +54,7 @@ jobs:
           ~/bin/crom write-version custom ${{ inputs.version }}
           brew install binutils
           echo "$(brew --prefix)/opt/binutils/bin" >> $GITHUB_PATH
-          rm -rm target/
+          rm -rf target/
       - name: Configure version and Linux
         if: matrix.os == 'ubuntu-latest'
         run: |
