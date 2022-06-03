@@ -39,7 +39,7 @@ jobs:
           restore-keys: |
              ${{ runner.os }}-${{ matrix.target }}-cargo-release-
              ${{ runner.os }}-${{ matrix.target }}-cargo-
-      - name: Install latest nightly
+      - name: Install correct version of Rust
         uses: actions-rs/toolchain@v1
         with:
             profile: minimal
@@ -62,11 +62,14 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --target "${{ matrix.target }}" --target-dir target/${{ matrix.target }}
+          args: --verbose --release --target "${{ matrix.target }}"
+      - run: |
+          ls target/${{ matrix.target }}/*
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.target }}
+          if-no-files-found: error
           path: |
             target/${{ matrix.target }}/release/toolup
             target/${{ matrix.target }}/release/toolup-shim
