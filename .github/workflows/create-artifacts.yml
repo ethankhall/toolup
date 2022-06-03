@@ -35,10 +35,10 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-${{ matrix.target }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-release-${{ hashFiles('ci/cache-version') }}-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-             ${{ runner.os }}-${{ matrix.target }}-cargo-release-
-             ${{ runner.os }}-${{ matrix.target }}-cargo-
+             ${{ runner.os }}-${{ matrix.target }}-cargo-release-${{ hashFiles('ci/cache-version') }}-
+             ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('ci/cache-version') }}-
       - name: Install correct version of Rust
         uses: actions-rs/toolchain@v1
         with:
