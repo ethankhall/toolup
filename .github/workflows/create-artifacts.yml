@@ -82,6 +82,10 @@ jobs:
           curl --location https://github.com/ethankhall/crom/releases/download/v0.3.4/crom-mac.tar.gz | tar -xvz  -C ~/bin
           chmod +x ~/bin/crom
           ~/bin/crom write-version custom ${{ inputs.version }}
+      - name: install binutils
+        run: |
+          brew install binutils
+          echo "$(brew --prefix)/opt/binutils/bin" >> $GITHUB_PATH
       - uses: actions-rs/cargo@v1
         with:
           use-cross: true
