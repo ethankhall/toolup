@@ -39,7 +39,7 @@ jobs:
           restore-keys: |
              ${{ runner.os }}-${{ matrix.target }}-cargo-release-
              ${{ runner.os }}-${{ matrix.target }}-cargo-
-      - name: Install latest nightly
+      - name: Install correct version of Rust
         uses: actions-rs/toolchain@v1
         with:
             profile: minimal
@@ -54,16 +54,20 @@ jobs:
           ~/bin/crom write-version custom ${{ inputs.version }}
           brew install binutils
           echo "$(brew --prefix)/opt/binutils/bin" >> $GITHUB_PATH
+          rm -rm target/
       - name: Configure version and Linux
         if: matrix.os == 'ubuntu-latest'
         run: |
           docker login docker.pkg.github.com --username ethankhall --password ${{ secrets.GITHUB_TOKEN }}
           docker run --rm -v $(pwd):/target docker.pkg.github.com/ethankhall/crom/cli:latest write-version custom ${{ inputs.version }}
+          rm -rm target/
       - uses: actions-rs/cargo@v1
         with:
           command: build
           args: --verbose --release --target "${{ matrix.target }}" --target-dir target/${{ matrix.target }}
-      - run: ls target/${{ matrix.target }}/*
+      - run: |
+          ls target/${{ matrix.target }}/*
+          tree target
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
