@@ -8,52 +8,21 @@ on:
         type: string
 
 jobs:
-  build-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-release-
-            ${{ runner.os }}-cargo-
-      - name: Install latest nightly
-        uses: actions-rs/toolchain@v1
-        with:
-            profile: minimal
-      - name: login to registry
-        run: docker login docker.pkg.github.com --username ethankhall --password ${{ secrets.GITHUB_TOKEN }}
-      - name: update version
-        run: |
-          docker run --rm -v $(pwd):/target docker.pkg.github.com/ethankhall/crom/cli:latest write-version custom ${{ inputs.version }}
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: linux-artifacts
-          path: |
-            target/release/toolup
-            target/release/toolup-shim
-
-  build-mac:
+  build-for-os:
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        target:
-          - x86_64-apple-darwin
-          - aarch64-apple-darwin
-    runs-on: macos-latest
+        build: [linux, macos-x86, macos-aarch64]
+        include:
+        - build: linux
+          os: ubuntu-latest
+          target: x86_64-unknown-linux-gnu
+        - build: macos-x86
+          os: macos-latest
+          target: x86_64-apple-darwin
+        - build: macos-aarch64
+          os: macos-latest
+          target: aarch64-apple-darwin
     steps:
       - uses: actions/checkout@v3
         with:
@@ -76,16 +45,20 @@ jobs:
             profile: minimal
             target: ${{ matrix.target }}
             override: true
-      - name: update version
+      - name: Configure version and MacOs
+        if: matrix.os == 'macos-latest'
         run: |
           mkdir ~/bin
           curl --location https://github.com/ethankhall/crom/releases/download/v0.3.4/crom-mac.tar.gz | tar -xvz  -C ~/bin
           chmod +x ~/bin/crom
           ~/bin/crom write-version custom ${{ inputs.version }}
-      - name: install binutils
-        run: |
           brew install binutils
           echo "$(brew --prefix)/opt/binutils/bin" >> $GITHUB_PATH
+      - name: Configure version and Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          docker login docker.pkg.github.com --username ethankhall --password ${{ secrets.GITHUB_TOKEN }}
+          docker run --rm -v $(pwd):/target docker.pkg.github.com/ethankhall/crom/cli:latest write-version custom ${{ inputs.version }}
       - uses: actions-rs/cargo@v1
         with:
           command: build
@@ -117,8 +90,8 @@ jobs:
           path: artifacts/x86_64-apple-darwin
       - uses: actions/download-artifact@v3
         with:
-          name: linux-artifacts
-          path: artifacts/linux
+          name: x86_64-unknown-linux-gnu
+          path: artifacts/x86_64-unknown-linux-gnu
       - name: login to registry
         run: docker login docker.pkg.github.com --username ethankhall --password ${{ secrets.GITHUB_TOKEN }}
       - name: Create release
