@@ -89,14 +89,14 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --target "${{ matrix.target }}"
+          args: --release --target "${{ matrix.target }}" --target-dir target/${{ matrix.target }}
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.target }}
           path: |
-            target/release/toolup
-            target/release/toolup-shim
+            target/${{ matrix.target }}/release/toolup
+            target/${{ matrix.target }}/release/toolup-shim
 
   release:
     runs-on: ubuntu-latest
