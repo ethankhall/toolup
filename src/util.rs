@@ -22,8 +22,10 @@ pub struct GlobalFolders {
 }
 
 impl GlobalFolders {
-
-    pub fn new(override_tool_root_dir: Option<String>, override_config_dir: Option<String>) -> Self {
+    pub fn new(
+        override_tool_root_dir: Option<String>,
+        override_config_dir: Option<String>,
+    ) -> Self {
         let log_dir = default_log_dir();
 
         let tool_root_dir = match override_tool_root_dir {
@@ -64,7 +66,10 @@ impl GlobalFolders {
     }
 
     pub fn shim_from_env() -> Self {
-        Self::new(std::env::var(TOOLUP_ROOT_TOOL_DIR).ok(), std::env::var(TOOLUP_GLOBAL_CONFIG_DIR).ok())
+        Self::new(
+            std::env::var(TOOLUP_ROOT_TOOL_DIR).ok(),
+            std::env::var(TOOLUP_GLOBAL_CONFIG_DIR).ok(),
+        )
     }
 }
 
@@ -157,12 +162,14 @@ pub fn exec(exe_path: String, args: Vec<String>) {
     use std::ffi::CString;
 
     // arg[0] needs to be the exec
-    let mut nix_args = Vec::new();
-    nix_args.push(exe_path.clone());
+    let mut nix_args = vec![exe_path.clone()];
     nix_args.extend(args);
 
     let exe_path = CString::new(exe_path).unwrap();
-    let argv: Vec<CString> = nix_args.into_iter().map(|x| CString::new(x).unwrap()).collect();
+    let argv: Vec<CString> = nix_args
+        .into_iter()
+        .map(|x| CString::new(x).unwrap())
+        .collect();
     nix::unistd::execv(&exe_path, argv.as_slice()).unwrap();
 }
 
@@ -185,12 +192,12 @@ pub fn extract_env_from_script(
     use std::io::BufRead;
     let mut extracted = BTreeMap::new();
 
-    let mut command = Command::new(script.script_path.to_string());
+    let mut command = Command::new(&script.script_path);
     let output = command.output()?;
 
     for line in output.stdout.lines() {
         let line = line?;
-        match line.replace("export ", "").split_once("=") {
+        match line.replace("export ", "").split_once('=') {
             Some((left, right)) => {
                 extracted.insert(left.to_string(), right.to_string());
             }
