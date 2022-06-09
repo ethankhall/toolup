@@ -49,7 +49,7 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: |
           mkdir ~/bin
-          curl --location https://github.com/ethankhall/crom/releases/download/v0.3.4/crom-mac.tar.gz | tar -xvz  -C ~/bin
+          curl --location https://github.com/ethankhall/crom/releases/download/v0.4.2/crom-v0.4.2-darwin-x86_64.tgz | tar -xvz  -C ~/bin
           chmod +x ~/bin/crom
           ~/bin/crom write-version custom ${{ inputs.version }}
           brew install binutils
