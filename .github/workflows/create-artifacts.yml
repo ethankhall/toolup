@@ -39,6 +39,7 @@ jobs:
           restore-keys: |
              ${{ runner.os }}-${{ matrix.target }}-cargo-release-${{ hashFiles('ci/cache-version') }}-
              ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('ci/cache-version') }}-
+             ${{ runner.os }}-${{ matrix.target }}-
       - name: Install correct version of Rust
         uses: actions-rs/toolchain@v1
         with:
