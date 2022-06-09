@@ -39,17 +39,17 @@ tracing-appender = "0.1"
 tracing-subscriber = "0.2"
 walkdir = "2.3"
 zip = "0.5"
-rusoto_s3 = { version = "0.47.0", default-features = false, features = ["rustls"] }
-rusoto_core = { version = "0.47.0", default-features = false, features = ["rustls"] }
-rusoto_credential = { version = "0.47.0" }
+rusoto_s3 = { version = "0.47", default-features = false, features = ["rustls"] }
+rusoto_core = { version = "0.47", default-features = false, features = ["rustls"] }
+rusoto_credential = { version = "0.47" }
 reqwest = { version = "0.11", default-features = false, features = ["rustls-tls", "json"] }
-url = "2.2"
-dirs = "4.0"
+url = "2"
+dirs = "4"
 uuid = { version = "1", features = [ "v4", "fast-rng" ] }
 
 # [target.'cfg(target_family = "windows")'.dependencies]
 [target.'cfg(target_family = "unix")'.dependencies]
-nix = "0.13"
+nix = "0.*"
 
 [build-dependencies]
 vergen = "7"
