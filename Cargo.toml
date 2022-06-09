@@ -22,7 +22,6 @@ git2 = { version = "0", features = [ "vendored-openssl" ] }
 graphql_client = { version = "0" }
 http = "0"
 human-panic = "1"
-indicatif = "0"
 json = "*"
 lazy_static = "1"
 path-absolutize = "3"
