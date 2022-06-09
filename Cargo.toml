@@ -35,13 +35,13 @@ thiserror = "1.0"
 tokio = { version = "1", features = ["full"] }
 toml = "0.5"
 tracing = { version = "0.1" }
-tracing-appender = "0.1"
-tracing-subscriber = "0.2"
+tracing-appender = "0.2"
+tracing-subscriber = { version = "0.3", features = [ "json" ] }
 walkdir = "2.3"
 zip = "0.5"
-rusoto_s3 = { version = "0.47", default-features = false, features = ["rustls"] }
-rusoto_core = { version = "0.47", default-features = false, features = ["rustls"] }
-rusoto_credential = { version = "0.47" }
+rusoto_s3 = { version = "0.48", default-features = false, features = ["rustls"] }
+rusoto_core = { version = "0.48", default-features = false, features = ["rustls"] }
+rusoto_credential = { version = "0.48" }
 reqwest = { version = "0.11", default-features = false, features = ["rustls-tls", "json"] }
 url = "2"
 dirs = "4"
