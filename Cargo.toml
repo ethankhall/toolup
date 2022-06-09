@@ -20,7 +20,7 @@ fs2 = "0.4.3"
 futures = "0.3"
 git2 = { version = "0.13.17", features = [ "vendored-openssl" ] }
 graphql_client = { version = "0.10" }
-http = "0.1.15"
+http = "0.2.8"
 human-panic = "1.0.3"
 indicatif = "0.11.0"
 json = "*"

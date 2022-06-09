@@ -847,7 +847,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "futures-util",
- "http 0.2.8",
+ "http",
  "indexmap",
  "slab",
  "tokio",
@@ -903,24 +903,13 @@ dependencies = [
 
 [[package]]
 name = "http"
-version = "0.1.21"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6ccf5ede3a895d8856620237b2f02972c1bbc78d2965ad7fe8838d4a0ed41f0"
-dependencies = [
- "bytes 0.4.12",
- "fnv",
- "itoa 0.4.8",
-]
-
-[[package]]
-name = "http"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "75f43d41e26995c17e71ee126451dd3941010b0514a81a9d11f3b341debc2399"
 dependencies = [
  "bytes 1.1.0",
  "fnv",
- "itoa 1.0.2",
+ "itoa",
 ]
 
 [[package]]
@@ -930,7 +919,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d5f38f16d184e36f2408a55281cd658ecbd3ca05cce6d6510a176eca393e26d1"
 dependencies = [
  "bytes 1.1.0",
- "http 0.2.8",
+ "http",
  "pin-project-lite",
 ]
 
@@ -972,11 +961,11 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2",
- "http 0.2.8",
+ "http",
  "http-body",
  "httparse",
  "httpdate",
- "itoa 1.0.2",
+ "itoa",
  "pin-project-lite",
  "socket2",
  "tokio",
@@ -991,7 +980,7 @@ version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d87c48c02e0dc5e3b849a2041db3029fd066650f8f717c07bf8ed78ccb895cac"
 dependencies = [
- "http 0.2.8",
+ "http",
  "hyper",
  "log",
  "rustls",
@@ -1057,12 +1046,6 @@ name = "ipnet"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "879d54834c8c76457ef4293a689b2a8c59b076067ad77b15efafbb05f92a592b"
-
-[[package]]
-name = "itoa"
-version = "0.4.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b71991ff56294aa922b450139ee08b3bfc70982c6b2c7562771375cf73542dd4"
 
 [[package]]
 name = "itoa"
@@ -1578,7 +1561,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2",
- "http 0.2.8",
+ "http",
  "http-body",
  "hyper",
  "hyper-rustls",
@@ -1630,7 +1613,7 @@ dependencies = [
  "bytes 1.1.0",
  "crc32fast",
  "futures 0.3.21",
- "http 0.2.8",
+ "http",
  "hyper",
  "hyper-rustls",
  "lazy_static",
@@ -1688,7 +1671,7 @@ dependencies = [
  "futures 0.3.21",
  "hex",
  "hmac",
- "http 0.2.8",
+ "http",
  "hyper",
  "log",
  "md-5",
@@ -1860,7 +1843,7 @@ version = "1.0.81"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b7ce2b32a1aed03c558dc61a5cd328f15aff2dbc17daad8fb8af04d2100e15c"
 dependencies = [
- "itoa 1.0.2",
+ "itoa",
  "ryu",
  "serde",
 ]
@@ -1872,7 +1855,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3491c14715ca2294c4d6a88f15e84739788c1d030eed8c110436aafdaa2f3fd"
 dependencies = [
  "form_urlencoded",
- "itoa 1.0.2",
+ "itoa",
  "ryu",
  "serde",
 ]
@@ -2082,7 +2065,7 @@ version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2702e08a7a860f005826c6815dcac101b19b5eb330c27fe4a5928fec1d20ddd"
 dependencies = [
- "itoa 1.0.2",
+ "itoa",
  "libc",
  "num_threads",
 ]
@@ -2197,7 +2180,7 @@ dependencies = [
  "futures 0.3.21",
  "git2",
  "graphql_client",
- "http 0.1.21",
+ "http",
  "human-panic",
  "indicatif",
  "json",
