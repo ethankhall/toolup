@@ -6,50 +6,50 @@ edition = "2021"
 default-run = "toolup"
 
 [dependencies]
-anyhow = "1.0"
-async-process = "1.0"
-async-trait = "0.1"
-atty = "0.2"
-chrono = { version = "0.4", features = ["serde"] }
-clap = { version = "3.1.18", features = ["derive", "env", "cargo"]  }
-derivative = "2.2.0"
-directories = "4.0"
+anyhow = "1"
+async-process = "1"
+async-trait = "0"
+atty = "0"
+chrono = { version = "0", features = ["serde"] }
+clap = { version = "3", features = ["derive", "env", "cargo"]  }
+derivative = "2"
+directories = "4"
 dotenv = "*"
 flate2 = { version = "1.0", features = ["tokio"] }
-fs2 = "0.4.3"
-futures = "0.3"
-git2 = { version = "0.13.17", features = [ "vendored-openssl" ] }
-graphql_client = { version = "0.10" }
-http = "0.1.15"
-human-panic = "1.0.3"
-indicatif = "0.11.0"
+fs2 = "0"
+futures = "0"
+git2 = { version = "0", features = [ "vendored-openssl" ] }
+graphql_client = { version = "0" }
+http = "0"
+human-panic = "1"
+indicatif = "0"
 json = "*"
-lazy_static = "1.2"
-path-absolutize = "3.0"
+lazy_static = "1"
+path-absolutize = "3"
 regex = "1.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-sha2 = "0.9"
-tar = "0.4"
-thiserror = "1.0"
+sha2 = "0"
+tar = "0"
+thiserror = "1"
 tokio = { version = "1", features = ["full"] }
-toml = "0.5"
-tracing = { version = "0.1" }
-tracing-appender = "0.2"
-tracing-subscriber = { version = "0.3", features = [ "json" ] }
-walkdir = "2.3"
-zip = "0.5"
+toml = "0"
+tracing = { version = "0" }
+tracing-appender = "0"
+tracing-subscriber = { version = "0", features = [ "json" ] }
+walkdir = "2"
+zip = "0"
 rusoto_s3 = { version = "0.48", default-features = false, features = ["rustls"] }
 rusoto_core = { version = "0.48", default-features = false, features = ["rustls"] }
 rusoto_credential = { version = "0.48" }
-reqwest = { version = "0.11", default-features = false, features = ["rustls-tls", "json"] }
+reqwest = { version = "0", default-features = false, features = ["rustls-tls", "json"] }
 url = "2"
 dirs = "4"
 uuid = { version = "1", features = [ "v4", "fast-rng" ] }
 
 # [target.'cfg(target_family = "windows")'.dependencies]
 [target.'cfg(target_family = "unix")'.dependencies]
-nix = "0.*"
+nix = "0"
 
 [build-dependencies]
 vergen = "7"
